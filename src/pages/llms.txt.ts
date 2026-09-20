@@ -105,7 +105,7 @@ libraries and the samples. Details: ${origin}/install/
 The same compiler builds .cr files unchanged. \`iyi build --crystal\` gives an
 iyi program Crystal's standard library, \`require\`, and shards (Kemal, db,
 ameba, sqlite3 among those swept through it). A Crystal program cannot require
-an iyi module; iyi consumes Crystal, not the other way round.
+an iyi module; iyi consumes Crystal, not the other way around.
 
 ## Pages
 
