@@ -65,7 +65,7 @@ const untouched = SPELLED[rest] ?? String(rest);
 <Page
   kind="TechArticle"
   title="Why iyi"
-  summary={`iyi runs your Crystal code today and rebuilds it about ${loop.claim.value}x faster. Developer experience, AI experience, portability, performance and efficiency: four things, one rule, every number measured.`}
+  summary={`iyi runs your Crystal code today and rebuilds it ${loop.claim.value}x faster. Developer experience, AI experience, portability, performance and efficiency: four things, one rule, every number measured.`}
 >
   <section class="hero">
     <div class="wrap">
@@ -108,7 +108,7 @@ const untouched = SPELLED[rest] ?? String(rest);
             Change one line in a {facts.structural.generated.toLocaleString("en-GB")}-line
             project and rebuild. iyi reads the declarations of the
             other {untouched} modules and none of their bodies, so the line you just
-            changed costs about {loop.claim.value}x less than under Crystal's
+            changed costs {loop.claim.value}x less than under Crystal's
             rules, on the same compiler binary. The bars below run at real speed.
           </p>
           <p><a href="#dx">The measurement, with its machine</a></p>
@@ -149,9 +149,9 @@ const untouched = SPELLED[rest] ?? String(rest);
       <p class="label">1. Developer experience</p>
       <h2>The loop you are actually in is the loop that got fast.</h2>
       <p class="sub">
-        Nobody uses a language through full builds. You change a line, you
-        build, you look. That loop is what R-1 was written for, and it is the
-        number this project exists for.
+        Day-to-day work happens in the edit loop: change a line and rebuild.
+        That loop is what R-1 was written for, and it is the number this
+        project exists for.
       </p>
 
       <Stamped
@@ -195,11 +195,10 @@ const untouched = SPELLED[rest] ?? String(rest);
       <p class="label">2. AI experience</p>
       <h2>A compiler built to be an agent's tool, not wrapped as one.</h2>
       <p class="sub">
-        An agent needs two things from a language: a boundary it can read, and
-        a loop it can afford. Most languages give it neither, so it reads whole
-        repositories into a prompt and hopes. iyi gives it both, for the same
-        reason a person gets them: a module's interface is a <em>file</em>, not
-        a convention.
+        An agent needs a boundary it can read and a loop it can afford.
+        Without those, it reads whole repositories into a prompt and hopes.
+        iyi gives it both, for the same reason a person gets them: a module's
+        interface is a <em>file</em>, not a convention.
       </p>
 
       <div class="aix-grid">
@@ -209,8 +208,8 @@ const untouched = SPELLED[rest] ?? String(rest);
             A <code>.iyimod</code> holds a module's declarations, with every
             type written down, and its machine code. A tool can read exactly
             what a module offers without the repository that produced it, and
-            check a change against it without building the world. That is not
-            an agent feature bolted on. It is R-1 and R-2, asked a question.
+            check a change against it without building the world. It is R-1
+            and R-2, asked a question.
           </p>
           <h3>"Did my change reach anybody?" has an answer</h3>
           <p>
@@ -301,9 +300,9 @@ const untouched = SPELLED[rest] ?? String(rest);
       </Stamped>
 
       <p class="sub">
-        Said plainly, as the README says it: the mechanism is built and the
-        claim is young. If the rules turn out not to be enough for agents,
-        that is a thing to measure rather than to promise.
+        The mechanism is built and the claim is young. If the rules turn out
+        not to be enough for agents, that is a thing to measure rather than
+        to promise.
       </p>
     </div>
   </section>
@@ -348,7 +347,7 @@ const untouched = SPELLED[rest] ?? String(rest);
           ))
         }{" "}
         are not. Windows compiles and links, and what it prints at run time
-        cannot be trusted yet. Both are said here rather than left to be found.
+        cannot be trusted yet.
       </p>
     </div>
   </section>
@@ -411,7 +410,7 @@ const untouched = SPELLED[rest] ?? String(rest);
         </Stamped>
       </div>
 
-      <h3 class="loses-head">Where it loses, said here</h3>
+      <h3 class="loses-head">Where it loses</h3>
       <Stamped
         claim={`${stringRow.gc_off.toFixed(2)}x slower at building strings, with the collector off.`}
         subject={runtime.subject}
@@ -419,10 +418,9 @@ const untouched = SPELLED[rest] ?? String(rest);
       >
         <p class="stamp-body">
           As it runs, the same workload is {stringRow.as_it_runs.toFixed(2)}x,
-          within noise. The collector is masking a slower builder, and the
-          README says so rather than publishing the flattering column. iyi is
-          also not quick at compiling a lot of code it has never seen; it is
-          quick on the loop, which is the row that matters.
+          within noise. The collector masks a slower builder. Cold builds of
+          unseen code are slower; the speed is on the edit loop, which is the
+          row that matters.
         </p>
       </Stamped>
       {/* README.md's own "Where it loses" and the paragraph after it, said in
@@ -438,8 +436,7 @@ const untouched = SPELLED[rest] ?? String(rest);
         outside the prelude every program carries; concurrency runs on Linux
         and macOS arm64 only; dependencies resolve and pin, but there is no
         registry and no artifact distribution yet, and <code>--crystal</code>{" "}
-        still leans on shards. Every one of these is a line in the README, not
-        a footnote.
+        still leans on shards.
       </p>
     </div>
   </section>

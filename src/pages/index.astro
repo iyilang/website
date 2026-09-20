@@ -139,7 +139,7 @@ const starts = [
       <div class="try-copy">
         <h2>Try iyi</h2>
         <p>
-          Looks like Crystal, reads like Ruby, builds like a systems language.
+          It reads like Crystal or Ruby, and builds like a systems language.
           This is the first program of the tour, and the output beside it is
           what the compiler's build of it printed.
         </p>
@@ -180,9 +180,9 @@ const starts = [
         </p>
         <ul class="checks">
           <li>
-            <strong>Grounding is one command.</strong> Not a convention, not a
-            retrieval step: <code>iyi mod context --json</code> prints the
-            surface an edit is allowed to know.
+            <strong>Grounding is one command.</strong>{" "}
+            <code>iyi mod context --json</code> prints the surface an edit is
+            allowed to know.
           </li>
           <li>
             <strong>The verdict is data.</strong> <code>iyi check -f json</code>{" "}
@@ -273,7 +273,7 @@ const starts = [
           <p>
             Change one line in one module and build again. iyi reads the
             declarations of everything else and none of the bodies, so the edit
-            loop is about {loop.claim.value}x shorter than the same compiler
+            loop is {loop.claim.value}x shorter than the same compiler
             without the rule.
           </p>
           <a href={`${base}why/`}>Why it is fast</a>
@@ -305,8 +305,8 @@ const starts = [
           <h3>Small and quick to start</h3>
           <p>
             Native code through LLVM, and a program links only what it uses. A
-            hello world is about {massRatio}x smaller than the same program
-            with Crystal's library, and starts in a fraction of the time.
+            hello world is {massRatio}x smaller than the same program with
+            Crystal's library.
           </p>
           <a href={`${base}why/`}>The numbers, with the machine they ran on</a>
         </li>
@@ -316,7 +316,7 @@ const starts = [
 
   <section class="measured">
     <div class="wrap">
-      <h2>Measured, not promised</h2>
+      <h2>Measured</h2>
       <p class="section-sub">
         One line changed in one of <Measure of="modules" /> modules,{" "}
         <Measure of="generated" /> lines
