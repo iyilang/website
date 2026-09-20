@@ -33,11 +33,10 @@ This is the step the language exists for. Everything else in iyi, the `pub`
 signatures, the traits, the orphan rule, is here to make it hold.
 
 Two files are enough to show it, so start with the one being imported. Every iyi
-file opens by naming its compilation unit. The declaration is the module's
-name rather than a floating namespace: it is absolute, and it tells you where
-the file sits: a module called `app/greeter` lives at `app/greeter.iyi`,
-resolved from the project root and never relative to whoever imports it. No
-manifest, no include path, no search order.
+file opens by naming its compilation unit, and that name is absolute. It tells
+you where the file sits: a module called `app/greeter` lives at
+`app/greeter.iyi`, resolved from the project root and never relative to whoever
+imports it. No manifest, no include path, no search order.
 
 <Sample path="samples/iyi/app/greeter.iyi" />
 
@@ -113,9 +112,9 @@ the machine attached and the command that measures them.
 ## Acyclic imports
 
 The rule that `import` forms a DAG is enforced long before any of that, and it
-has to be: a module initializes after
-every module it imports, so two modules that wait for each other have no order
-to be initialized in and there is no build to have.
+has to be: a module initializes after every module it imports, so two modules
+that wait for each other have no order to be initialized in and there is no
+build to have.
 
 Write one anyway and the compiler declines, draws the cycle it found, and names
 the move that fixes it.

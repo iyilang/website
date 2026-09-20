@@ -315,10 +315,9 @@ const marked = diagnosticEvents.map((event) => {
           diagnostic from wasm at all. Work on{" "}
           <code>wasm/compiler-in-browser</code> cleared that, so a checker in
           the page is reachable now and when one lands it feeds this same event
-          path. The limit is running the program afterwards: a
-          browser has no linker and producing a program out of a module needs
-          one. So the diagnostics below are recorded, and the page says so
-          rather than leaving a reader to assume.
+          path. The limit is running the program afterwards: a browser has no
+          linker and producing a program out of a module needs one. So the
+          diagnostics below are recorded.
         </li>
         <li>
           <strong>{differing.length} of the samples do not print the same
