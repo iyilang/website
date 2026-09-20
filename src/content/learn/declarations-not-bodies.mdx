@@ -113,9 +113,9 @@ the machine attached and the command that measures them.
 ## Acyclic imports
 
 The rule that `import` forms a DAG is enforced long before any of that, and it
-has to be: a module initialises after
+has to be: a module initializes after
 every module it imports, so two modules that wait for each other have no order
-to be initialised in and there is no build to have.
+to be initialized in and there is no build to have.
 
 Write one anyway and the compiler declines, draws the cycle it found, and names
 the move that fixes it.

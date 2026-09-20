@@ -117,7 +117,7 @@ which has to be checked where the type is instantiated rather than where the imp
 is written. The bound on `announce` above works precisely because nothing about it
 is conditional.
 
-Two more are refused on purpose rather than for want of effort. A specialised
+Two more are refused on purpose rather than for want of effort. A specialized
 impl, `impl Show for Box(Int32)`, needs a rule for which impl wins that stays
 sound when the two live in separately compiled modules. A blanket impl,
 `impl Show for T forall T : Show`, is refused for the same reason open classes
