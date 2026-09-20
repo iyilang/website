@@ -32,17 +32,16 @@ Step two asked what a declaration has to say. This step is about what a
 declaration has to be able to promise.
 
 An artifact carrying a module's declarations only works if a type's method set is
-knowable from the module that declared it. In Crystal it is not, because any file
-can reopen any class. So iyi does not have open classes, and this is what it has
-instead.
+knowable from the module that declared it. In Crystal any file can reopen any
+class. iyi closes classes and uses traits and impls instead.
 
 A trait names requirements. `abstract def` marks one an implementer has to
 provide.
 
 <Sample path="samples/iyi/hello.iyi" region="trait Greet" />
 
-A type gets that trait by having an impl. Not by inheriting, not by including, not
-by happening to have a method with the right name.
+A type gets that trait by having an explicit impl rather than by inheriting,
+including, or happening to have a method with the right name.
 
 <Sample path="samples/iyi/hello.iyi" region="impl Greet for User" />
 
@@ -68,7 +67,7 @@ same impl and discover it at link time.
 Coherence checked locally, with no global pass. That is the whole trade, and it
 is what an artifact needs.
 
-Two doors that look open are not. `include Greet` inside a struct does not work,
+Two familiar shortcuts are closed. `include Greet` inside a struct does not work,
 because a type acquires a trait by having an impl whose location R-3 can check,
 and `include` has no such rule. `using` does not reach a trait's methods either:
 a trait exports no names, because a trait method resolves from the receiver
@@ -78,7 +77,7 @@ There is a nice side effect. Leave a requirement unmet and the error lands where
 you wrote the impl, not somewhere downstream where a caller trips over it. The
 module that declares the impl is the module that has to be right.
 
-## forall, and why it is not noise
+## Binding parameters with forall
 
 An impl over a generic type has to say which names are parameters.
 
@@ -109,7 +108,7 @@ has never heard of your types. README.md is unkind and accurate about the
 comparison: Kemal accepts the same block and serves an empty body, on every
 request, forever.
 
-## What this does not do yet
+## Limits
 
 A bound on an impl is a different mechanism and it is not implemented.
 `impl Show for Box(T) forall T : Show` parses and is rejected. A bound there makes
@@ -118,7 +117,7 @@ which has to be checked where the type is instantiated rather than where the imp
 is written. The bound on `announce` above works precisely because nothing about it
 is conditional.
 
-Two more are refused on purpose rather than for want of effort. A specialised
+Two more are refused on purpose rather than for want of effort. A specialized
 impl, `impl Show for Box(Int32)`, needs a rule for which impl wins that stays
 sound when the two live in separately compiled modules. A blanket impl,
 `impl Show for T forall T : Show`, is refused for the same reason open classes

@@ -29,7 +29,7 @@ import Quote from "../../components/Quote.astro";
 
 Two steps in, the library from step one has a shape: three definitions, two of
 them exported, all of their types written down. Bringing that into a file of your
-own takes two directives, and they are not the same one written twice.
+own takes two distinct directives.
 
 <Sample
   path="samples/iyi/modules.iyi"
@@ -51,7 +51,8 @@ in your file by adding one to itself.
 The selective form on the last line is the interesting one. `app/greeter` and
 `app/formal` both export `title`, so taking both whole would make every bare
 `title` in the file ambiguous. It takes exactly `address` from the second module
-and leaves that module's `title` behind. Not tidiness: a repair.
+and leaves that module's `title` behind. That selective import is a repair
+rather than mere tidiness.
 
 ## Where the ambiguity gets reported
 
@@ -77,5 +78,5 @@ person is actually paying attention.
 
 ## Now forget the other one
 
-Do it the other way round. Import the module, and call one of its exported
+Do it the other way around. Import the module, and call one of its exported
 functions the way every other language would let you.
