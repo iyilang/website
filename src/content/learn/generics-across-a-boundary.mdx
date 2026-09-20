@@ -30,11 +30,11 @@ Step four gave a generic type a trait, and step five typed a generic body
 against its bound. Neither asked what the compiler emits. This step does, and
 it is the one step in this path whose rule is mostly a plan.
 
-Read the premise above as two sentences with a boundary between them. Inside a
-module, monomorphisation: a body per set of types, which is what Crystal does
-and what every C++ template does. Across a module boundary, a dictionary keyed
-on GC shape: one compiled body, serving every type whose values are laid out
-the same way, with the operations it needs passed in.
+The rule draws a boundary. Inside a module, monomorphisation: a body per set
+of types, which is what Crystal does and what every C++ template does. Across
+a module boundary, a dictionary keyed on GC shape: one compiled body, serving
+every type whose values are laid out the same way, with the operations it needs
+passed in.
 
 ## The boundary, in a program
 
@@ -91,7 +91,7 @@ leaving a reader to assume the better answer.
   to="way Crystal does."
 />
 
-## Why the dictionary is not a free afternoon
+## What the dictionary requires
 
 A body shared by several types still has to tell the collector which words in
 a value are pointers, so the pointer map has to travel with the shape. That is
@@ -110,10 +110,10 @@ every body and no object code, and it holds the corpus wide share of bodies
 under a line set with headroom. A tripwire rather than a target: what the
 dictionary would take out of a consumer's build, kept honest on every push.
 
-## Ask for the clause that is not there
+## Forced monomorphization
 
 R-4's third sentence names an annotation, `@[Monomorphize]`, for forcing
 specialisation across a boundary. It is the part of the rule with nothing
 behind it at all, and the compiler does not pretend otherwise. Write it and
-the answer is not a warning, a silent acceptance, or a slower build. It is a
-name the compiler has never heard of.
+the compiler rejects the name as unknown rather than issuing a warning,
+accepting it silently, or falling back to a slower build.

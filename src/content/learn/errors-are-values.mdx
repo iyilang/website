@@ -9,7 +9,7 @@ bought: >-
   Nothing was built for this. Exhaustiveness was already in the language and
   unions already carried a type id, so adding an error member to an exported
   signature turns every incomplete `case` on it into a compile error, and an
-  error a caller has not handled cannot reach production quietly.
+  error a caller has not handled cannot reach production.
 sources:
   - file: samples/iyi/errors.iyi
     note: the two producers, the propagating call, the exhaustive case, and what `.or` and `.or_panic` are
@@ -83,7 +83,7 @@ incomplete `case` on it stops compiling.
 Sometimes you want the value or a default. `.or` takes the default, `.or_panic`
 takes the value or dies.
 
-Neither can be an ordinary method, and the reason is worth understanding. A real
+Neither can be an ordinary method: a real
 method call on `Int32 | IOError` would demand that method from both members, and
 a method every error type has to supply is exactly what this design avoids. So
 the compiler knows these two by name, which is also why `or` and `or_panic` are
@@ -94,7 +94,7 @@ instead of being computed: the default's type unioned with the non-error members
 `.or_panic` yields the non-error members alone, because what it calls never
 returns.
 
-## What this does not do yet
+## Limits
 
 Panics. They are meant to be catchable only at task boundaries, and what a task
 boundary is has not been specified. Until it is, `.or_panic` raises a Crystal

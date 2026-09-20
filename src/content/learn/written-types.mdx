@@ -44,8 +44,8 @@ exported, and the file says what that costs.
   must="def greeting : String"
 />
 
-Read `greeting` again. It is not merely awkward to reach from another file, it is
-unreachable, and the sample says why in the comment above it. A `.iyimod`
+Read `greeting` again: it is unreachable from another file rather than merely
+awkward to access, and the sample says why in the comment above it. A `.iyimod`
 artifact carries a module's exports and nothing else. So a name without `pub` has
 to be genuinely unreachable, or that artifact would not be enough to compile
 against. Qualifying it does not help. `App::Greeter.greeting` fails for the same
@@ -53,8 +53,8 @@ reason a `using` cannot find it: it is not there to be found.
 
 Notice what just happened to step one. "Unreachable rather than absent from
 `using`" and "not in the artifact" turned out to be the same sentence. Visibility
-in iyi is not advice to the reader. It is the shape of a file the compiler will
-later read instead of your source.
+in iyi is the shape of a file the compiler will later read instead of your
+source, rather than advice to the reader.
 
 ## And what those names say
 
@@ -82,9 +82,9 @@ is the same list of signatures with the bodies gone.
 ## Break it three ways
 
 An exported def with no return type looks like an oversight the compiler could
-just fix, since the body is right there. It cannot, and the reason is worth more
-than the rule: the body stays in this module, so the consumer never sees it. The
-compiler says which symbol it would end up asking the linker for.
+just fix, since the body is right there. It cannot: the body stays in this
+module, so the consumer never sees it. The compiler says which symbol it would
+end up asking the linker for.
 
 Then the other two ways to get this rule wrong, recorded the same way. Reach
 from another module for a name that carries no `pub`, which is the first half
