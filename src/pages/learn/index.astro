@@ -153,8 +153,7 @@ const further = [
       <p class="sideways">
         Or start with the syntax. <a href={tourStart.href}>The tour</a> is{" "}
         {tourSamples.length} short programs that run in your browser, from one{" "}
-        <code>puts</code> to tasks and channels, and it is the second track at
-        the foot of this page.
+        <code>puts</code> to tasks and channels.
       </p>
     </div>
 
@@ -210,7 +209,7 @@ const further = [
                     Then step {next.data.order}, <a href={lessonHref(base, next)}>{next.data.title}</a>.
                   </>
                 ) : (
-                  <>The last step. After it, the tour below is the syntax.</>
+                  <>The last step. The syntax tour follows below.</>
                 )
               }
             </p>
@@ -242,12 +241,12 @@ const further = [
       <p class="label">The second track</p>
       <h2 class="after-head">The syntax, in {tourSamples.length} short programs</h2>
       <p class="after-body">
-        The steps above are the rules, which is what makes iyi a different
-        language from the one it forked. The tour is everything else: the
-        syntax, in the order a person learns a language, each step a program
-        that runs in your browser from the module the compiler built for it.
-        Read the rules first and the tour reads as confirmation. Read the tour
-        first and the rules read as the reason.
+        The rules are what make iyi a different language from the one it
+        forked. The tour is everything else: the syntax, in the order a person
+        learns a language, each step a program that runs in your browser from the
+        module the compiler built for it. Read the rules first and the tour
+        reads as confirmation. Read the tour first and the rules read as the
+        reason.
       </p>
 
       <ol class="tour">
@@ -279,9 +278,9 @@ const further = [
       <hr class="rule" />
       <p class="label">And the rest of the samples</p>
       <p class="after-body">
-        Neither track is the whole repository. <code>samples/iyi</code> holds{" "}
+        Beyond both tracks, <code>samples/iyi</code> holds{" "}
         <Measure of="samples" /> programs, each written to document a part of
-        the design rather than to show off. The ones no step above is grounded
+        the design rather than to show off. The samples no step is grounded
         in are the ones to read next, and each of them runs here too:
       </p>
       <ul class="further">

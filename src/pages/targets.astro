@@ -76,10 +76,9 @@ const otherSpelling = audit.values.filter(
     <p class="label">Platforms</p>
     <h1>Compiles for <Measure of="targets" />. Runs on {ranCount}, every build.</h1>
     <p class="lede">
-      Most projects say "supports the platform" and mean the code generator had
-      no objection. Here it means three different checks, and a target reaches
-      a different number of them. This page is the table, and every cell in it
-      is a job and a line in{" "}
+      Platform support here means three distinct checks, and each target
+      reaches a different number of them. This page is the table, and every
+      cell in it is a job and a line in{" "}
       <a href="https://github.com/iyilang/iyi/blob/master/.github/workflows/iyi.yml">
         one workflow
       </a>.
@@ -170,9 +169,9 @@ const otherSpelling = audit.values.filter(
         <p class="sub">
           {audit.values.length} targets crossed with{" "}
           {audit.samples.length} programs ({audit.samples.join(", ")}), each
-          object read for what it leaves undefined. The programs are not a
-          shorter list for a reason: each carries per-platform branches, and a
-          branch only its own platform compiles is a branch nobody checks.
+          object read for what it leaves undefined. Each program carries
+          per-platform branches, and a branch only its own platform compiles
+          is a branch nobody checks.
         </p>
         <Lifted
           text={audit.text}

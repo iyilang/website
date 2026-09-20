@@ -28,10 +28,19 @@
 //     shown, so the site restates the repository rather than one file of it;
 //   * README.md's own platform words under the one-liner ("Linux x86-64 and
 //     macOS arm64"), which is where the prose name beside each target comes
-//     from. It is matched back to a target by scoring the target's own `uname`
-//     components against the phrase's words, so the only spellings this file
-//     knows are the two aliases below. An unmatched or ambiguous phrase fails
-//     and names itself; it is never guessed.
+//     from. They are found by the fenced block that holds the `install.sh`
+//     one-liner rather than by the clause that used to follow them, because
+//     what follows is prose about other platforms and moves: 48bc8d0b5 put a
+//     PowerShell block between the sentence and the clause this once matched.
+//     What does not move is that the sentence sits directly under the command
+//     it qualifies. Each phrase is matched back to a target by scoring the
+//     target's own `uname` components against the phrase's words, so the only
+//     spellings this file knows are the two aliases below. An unmatched or
+//     ambiguous phrase fails and names itself; it is never guessed;
+//   * install.sh is the only installer read here. Windows has its own
+//     (install.ps1) and its own archive, a zip rather than a tarball, so it is
+//     not one of this record's targets and src/lib/release.ts builds no URL
+//     for it.
 //
 // WHAT IT DOES NOT DO. It does not check that a release actually published the
 // tarballs, or that a URL resolves. It checks that the site offers exactly what
@@ -155,15 +164,17 @@ if (undocumented.length > 0) {
   );
 }
 
-/* The platform words, out of the sentence under README's one-liner. Anchored on
- * the clause that follows them, because the sentence is prose and a looser
- * match would drag half a paragraph in. */
-const prose = /\.? ([A-Z][^.;]*?); the tarball by hand/.exec(readme);
+/* The platform words, out of the sentence under README's one-liner. Anchored
+ * on the one-liner's own fenced block: the sentence a reader is shown is the
+ * one directly under the command, and the first sentence after the fence is
+ * it. Anchoring on what comes after instead put this at the mercy of a
+ * paragraph about a platform this record does not carry. */
+const prose = /install\.sh \| sh[^`]*``` ([A-Z][^.;]*)[.;]/.exec(readme);
 if (!prose) {
   throw new Error(
-    `install-targets: ${CLAIM} no longer names the platforms under its ` +
-      `one-liner ("... ; the tarball by hand"), so there is no sentence in ` +
-      `the repository to take the prose name of each target from.`,
+    `install-targets: ${CLAIM} no longer states the platforms in a sentence ` +
+      `under the fenced ${SOURCE} one-liner, so there is no sentence in the ` +
+      `repository to take the prose name of each target from.`,
   );
 }
 const phrases = prose[1].split(/\s*(?:,|and)\s*/).filter(Boolean);

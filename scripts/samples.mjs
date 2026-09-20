@@ -2,12 +2,25 @@
 // Transcludes the repository's own text into JSON the site imports. Nothing a
 // lesson shows as code is typed into the lesson. Two kinds of text arrive here:
 //
-//   1. The sample programs under `samples/iyi` in the iyi repository, and the
-//      tour under `samples/tour` in this one. A lesson names a file, a named
-//      top-level declaration in it, or a content-anchored span of it, and the
-//      build reads that text out of the file at that moment. A sample that
-//      changes in the repository changes on the site. A sample that is renamed
-//      or deleted fails the build, naming the lesson that asked for it.
+//   1. The sample programs under `samples/iyi` in the iyi repository, read at
+//      the tag CHANGELOG.md names, and the tour under `samples/tour` in this
+//      one, read off disk. A lesson names a file, a named top-level
+//      declaration in it, or a content-anchored span of it, and the build
+//      reads that text out of the tree that ships it. A sample a release
+//      renamed or dropped fails the build, naming the lesson that asked for
+//      it.
+//
+//      WHY THE TAG RATHER THAN THE CHECKOUT. Every listing is painted with
+//      the tokens in `records/highlight.json`, which
+//      `scripts/record-highlight.mjs` records from a release and
+//      `scripts/records.mjs` checks against that release. Indexing the text
+//      from master instead left the site holding two readings of one program
+//      the moment a commit after the tag touched a sample, and `Sample.astro`
+//      compares them: the build stopped, correctly, about the wrong pair of
+//      files. The line `scripts/records.mjs` draws is drawn here too -
+//      `samples/iyi/` is the iyi tree's and is read at the release, and this
+//      repository's own files are in front of you and move when you move
+//      them.
 //   2. The console recordings in README.md. A lesson names a block by an anchor
 //      string, and that anchor has to appear in exactly one fenced block in the
 //      whole README. The block travels with the line numbers it was quoted
@@ -27,6 +40,7 @@ import {
 } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { blobAt, releaseRef, treeAt } from "./release-ref.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = process.env.IYI_REPO ? resolve(process.env.IYI_REPO) : resolve(here, "..", "..", "iyi");
@@ -40,7 +54,8 @@ const die = (message) => {
 // Samples ------------------------------------------------------------------
 
 const site = resolve(here, "..");
-const samplesRoot = resolve(repo, "samples", "iyi");
+const release = releaseRef(repo);
+const samplesRoot = `${release.tag}:samples/iyi`;
 const tourRoot = resolve(site, "samples", "tour");
 
 function walk(dir) {
@@ -107,22 +122,31 @@ function regionsOf(lines) {
   return { regions, ambiguous: [...ambiguous].sort() };
 }
 
-const samples = {};
-for (const [root, tree] of [[samplesRoot, repo], [tourRoot, site]]) {
-  for (const file of walk(root)) {
-    const path = relative(resolve(tree, "samples"), file).split("\\").join("/");
-    const text = readFileSync(file, "utf8");
-    const lines = text.replace(/\n$/, "").split("\n");
-    const { regions, ambiguous } = regionsOf(lines);
+/* Two trees, read two ways, for the reason at the top of this file. `git
+ * ls-tree` sorts, which is what `walk` does to a directory, so the index is in
+ * one order whichever side a program came from. */
+const indexed = [
+  ...treeAt(repo, release.tag, "samples/iyi")
+    .filter((path) => path.endsWith(".iyi"))
+    .map((path) => [path, blobAt(repo, release.tag, path).toString("utf8")]),
+  ...walk(tourRoot).map((file) => [
+    relative(site, file).split("\\").join("/"),
+    readFileSync(file, "utf8"),
+  ]),
+];
 
-    samples[path] = {
-      path: `samples/${path}`,
-      text,
-      lines: lines.length,
-      regions,
-      ambiguous,
-    };
-  }
+const samples = {};
+for (const [path, text] of indexed) {
+  const lines = text.replace(/\n$/, "").split("\n");
+  const { regions, ambiguous } = regionsOf(lines);
+
+  samples[path.replace(/^samples\//, "")] = {
+    path,
+    text,
+    lines: lines.length,
+    regions,
+    ambiguous,
+  };
 }
 
 if (Object.keys(samples).length === 0) {
@@ -443,8 +467,19 @@ if (missing.length > 0) {
   );
 }
 
+/* Where a citation is checked follows what the citation is. A sample is shown
+ * from the release, so it has to be in the release. This repository's own
+ * files, and the rest of the iyi checkout a lesson stands on - SPEC.md, a
+ * bench script, a compiler pass - are cited as they stand and are checked
+ * where they stand, which is the tree scripts/facts.mjs and
+ * scripts/proofs.mjs read as well. */
+const cited = (path) => {
+  if (path.startsWith("samples/iyi/")) return blobAt(repo, release.tag, path) !== null;
+  return existsSync(resolve(path.startsWith("records/") ? site : repo, path));
+};
+
 const absentSources = [...claimedSources]
-  .filter(([path]) => !existsSync(resolve(path.startsWith("records/") ? resolve(here, "..") : repo, path)))
+  .filter(([path]) => !cited(path))
   .map(([path, where]) => `${path} (cited by ${[...where].join(", ")})`);
 if (absentSources.length > 0) {
   die(

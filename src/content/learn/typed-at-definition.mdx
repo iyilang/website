@@ -1,7 +1,7 @@
 ---
 title: Typed where it is written
 order: 5
-summary: A def that writes all of its types is typed at its definition, caller or no caller. A trait-restricted parameter is typed against exactly its bound, so a generic body cannot quietly use what it did not declare.
+summary: A def that writes all of its types is typed at its definition, caller or no caller. A trait-restricted parameter is typed against exactly its bound, so a generic body cannot use what it did not declare.
 rule: R-2c
 sample: samples/iyi/collections.iyi
 breaks: r2c-outside-bound
@@ -20,7 +20,7 @@ sources:
   - file: samples/iyi/calc/lexer.iyi
     note: an exported signature whose callers all live in other modules
   - file: SPEC.md
-    note: R-2c, including its own list of what it does not reach yet
+    note: R-2c, including its own list of limits
 ---
 
 import Sample from "../../components/Sample.astro";
@@ -65,15 +65,15 @@ yet, and there is no call to learn them from. Duck typed generics answer by
 never checking, and finding out in whichever caller compiled first. Rust
 answers by checking always, against the bound.
 
-iyi answers the way Rust does, and the compiler's own account of how is worth
-reading: for each trait-restricted parameter it synthesizes one witness type,
-implements the trait's abstract requirements with stub bodies, and types the
-body against the witness. So the body is checked against exactly what the
-signature declared, and against nothing the program happens to contain.
+iyi answers the way Rust does: for each trait-restricted parameter it
+synthesizes one witness type, implements the trait's abstract requirements with
+stub bodies, and types the body against the witness. So the body is checked
+against exactly what the signature declared, and against nothing the program
+happens to contain.
 
 That is why the rejection at the foot of this page names a type nobody wrote.
 
-## What it does not reach yet
+## Limits
 
 The rule states its own limits, and this step's program is one of them.
 

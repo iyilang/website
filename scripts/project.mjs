@@ -47,7 +47,7 @@ const DOCUMENTS = [
   { id: "contributing", file: "CONTRIBUTING.md", blurb: "What a change to this repository is expected to come with." },
   { id: "security", file: "SECURITY.md", blurb: "Where a vulnerability goes, and which of the two trackers is the right one." },
   { id: "conduct", file: "CODE_OF_CONDUCT.md", blurb: "The Contributor Covenant, and the address that enforces it here." },
-  { id: "notice", file: "NOTICE.md", blurb: "Crystal's copyright, the licence, and every library the compiler links." },
+  { id: "notice", file: "NOTICE.md", blurb: "Crystal's copyright, the license, and every library the compiler links." },
 ];
 
 const commit = execFileSync("git", ["-C", repo, "rev-parse", "HEAD"], {

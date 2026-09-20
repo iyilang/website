@@ -72,7 +72,7 @@ for Type\` lives with the trait or the type (R-3).
 
 - Developer experience: change one line in a ${s.generated.toLocaleString("en-GB")}-line project of ${s.modules}
   modules and rebuild in ${loop.best.iyi} s, against ${loop.best.crystal} s under Crystal's rules on the
-  same compiler binary: about ${loop.claim.value}x less. Measured by \`${loop.command}\`
+  same compiler binary: ${loop.claim.value}x less. Measured by \`${loop.command}\`
   on ${loop.machine}.
 - AI experience: a module's interface is a file (.iyimod). \`iyi mod context\`
   grounds an edit at ${pack.size_low} to ${pack.size_high}% of the sources' size; a model writing
@@ -105,7 +105,7 @@ libraries and the samples. Details: ${origin}/install/
 The same compiler builds .cr files unchanged. \`iyi build --crystal\` gives an
 iyi program Crystal's standard library, \`require\`, and shards (Kemal, db,
 ameba, sqlite3 among those swept through it). A Crystal program cannot require
-an iyi module; iyi consumes Crystal, not the other way round.
+an iyi module; iyi consumes Crystal, not the other way around.
 
 ## Pages
 
@@ -120,8 +120,8 @@ an iyi module; iyi consumes Crystal, not the other way round.
 - [Targets](${origin}/targets/): what CI type-checks, audits and runs, per triple.
 - [Project](${origin}/project/): contributing, security, the code of conduct, the notices.
 
-The design record and the release notes are not on this site: SPEC.md and
-CHANGELOG.md are read in the repository, which is where they are kept current.
+The design record and the release notes live in the repository: SPEC.md and
+CHANGELOG.md are read there, which is where they are kept current.
 
 ## The tour
 

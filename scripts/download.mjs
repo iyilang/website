@@ -100,12 +100,16 @@ const verify = span(installer, INSTALLER, "verify", /^# The checksum line for th
 // The release job that writes the file the installer looks for. Anchored on
 // the `cat` as well, because an earlier job writes SHA256SUMS too: it is the
 // one that proves the refusal, below, and matching it here would have quoted
-// fifty lines of the wrong job.
+// fifty lines of the wrong job. The globs it sums are not spelled out: one
+// SHA256SUMS covers every archive a release publishes, so 472e2ba1a added
+// `*.zip` beside `*.tar.gz` and this anchor has no business caring. What it
+// cares about is that the release job still writes that one file and prints
+// it.
 const publish = span(
   workflow,
   WORKFLOW,
   "publish",
-  /sha256sum \*\.tar\.gz > SHA256SUMS && cat SHA256SUMS/,
+  /sha256sum [^>]*> SHA256SUMS && cat SHA256SUMS/,
   /gh release create/,
 );
 
@@ -176,7 +180,7 @@ if (!refused) die(`${INSTALLER}'s uname case no longer ends in a die, so a machi
 // is that these are one file.
 const wantedFile = /-o "\$tmp\/([A-Za-z0-9._]+)"/.exec(verify.text);
 if (!wantedFile) die(`${INSTALLER}'s verification no longer downloads a file this script can name`);
-const writtenFile = /sha256sum \*\.tar\.gz > ([A-Za-z0-9._]+)/.exec(publish.text);
+const writtenFile = /sha256sum [^>]*> ([A-Za-z0-9._]+)/.exec(publish.text);
 if (!writtenFile) die(`${WORKFLOW}'s release job no longer writes a checksum file this script can name`);
 if (wantedFile[1] !== writtenFile[1]) {
   die(

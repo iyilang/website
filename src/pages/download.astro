@@ -88,10 +88,9 @@ const machineOf = (target: string) =>
     <p class="sub">
       What that prints has to equal the line for the same file in{" "}
       <a href={releaseUrl(release)}><code>{download.checksums}</code></a>, which
-      is attached to the release. This site does not restate the digests: it
-      cannot read them at build time, and a hash copied by hand is exactly the
-      thing a hash exists to catch. They are on the release page, beside the
-      files they are about.
+      is attached to the release. The digests are on the release page, beside the
+      files they verify: a hash copied by hand is exactly the thing a hash
+      exists to catch, and the site cannot read them at build time.
     </p>
     <p class="sub">
       Where <code>{preferred.tool}</code> is missing, the installer falls back
@@ -106,8 +105,8 @@ const machineOf = (target: string) =>
   <section class="wrap">
     <h2>What the installer checks, in its own words</h2>
     <p class="sub">
-      This is the passage, not a summary of it. Note the last branch: a release
-      that published no checksum file is said out loud rather than passed over.
+      The verification passage from install.sh. The final branch halts with an
+      explicit error if a release published no checksum file.
     </p>
     <Lifted
       text={download.passages.verify.text}
@@ -150,9 +149,8 @@ const machineOf = (target: string) =>
   <section class="wrap">
     <h2>Machines it refuses</h2>
     <p class="sub">
-      Releases ship {download.accepted.map((entry) => entry.target).join(" and ")},
-      and the installer names what it will not do rather than guessing. Anything
-      else gets this sentence and a pointer to building from source:
+      Releases ship {download.accepted.map((entry) => entry.target).join(" and ")}.
+      Anything else gets this refusal and a pointer to building from source:
     </p>
     <p class="refusal"><code>{download.refused}</code></p>
     <Lifted
@@ -198,8 +196,9 @@ const machineOf = (target: string) =>
   <section class="wrap">
     <h2>Every release</h2>
     <p class="sub">
-      The notes for each are on its own page in the repository, written from
-      the tag's own message. This site does not publish the changelog.
+      The changelog lives in the repository, where it stays current with the
+      code. Notes for each release are on its own page there, written from the
+      tag's own message.
     </p>
     <ul class="history">
       {history.map((entry) => (
