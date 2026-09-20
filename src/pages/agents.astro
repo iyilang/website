@@ -82,12 +82,10 @@ if (!consumer) {
       <p class="label">For agents, and for you</p>
       <h1>A language with two first-class readers.</h1>
       <p class="lede">
-        Most languages were designed for one audience and grew tooling for the
-        other. iyi treats an agent as a reader of code beside the person
-        writing it, and that is a decision in the language rather than a layer
-        over it: the rules that make a build read declarations instead of
-        bodies are the rules that let a model read an interface without the
-        repository.
+        iyi treats an agent as a reader of code beside the person writing it.
+        That is a decision in the language rather than a layer over it: the
+        rules that make a build read declarations instead of bodies are the
+        rules that let a model read an interface without the repository.
       </p>
       <p class="lede">
         The design record states what that takes, and this page is the
@@ -208,7 +206,7 @@ if (!consumer) {
           <p>
             A test is affected exactly when the changed file is in its
             transitive import closure, parsed rather than compiled. So the skip
-            is a fact and not an optimisation that might be wrong.
+            is a fact and not an optimization that might be wrong.
           </p>
           <div class="two">
             <Frame
@@ -235,9 +233,9 @@ if (!consumer) {
     <div class="wrap">
       <h2>Does the edit reach anyone?</h2>
       <p class="sub">
-        The question an agent working in someone else's repository needs
-        answered, and the one this language was shaped to make answerable. Two
-        edits to the same file, one artifact each, read rather than rebuilt.
+        An agent working in someone else's repository needs to know whether an
+        edit affects consumers or stays internal. Two edits to the same file,
+        one artifact each, read rather than rebuilt.
       </p>
       <div class="two">
         <Frame
@@ -271,7 +269,7 @@ if (!consumer) {
         as Model Context
         Protocol tools to a harness, both over stdio, and both are shells
         around the same front end a build uses. So there is no agent mode and
-        no forked behaviour: same verb, same file, two doors.
+        no forked behavior: same verb, same file, two doors.
       </p>
       <div class="two">
         <div class="console">
