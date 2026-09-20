@@ -238,8 +238,7 @@ const marked = diagnosticEvents.map((event) => {
     <div class="to-wide intro">
       <h1>playground evidence</h1>
       <p class="lead">
-        Worth being exact, because "runs in your browser" is a claim a lot of
-        pages make loosely. This page is the recording behind the{" "}
+        This page is the recording behind the{" "}
         <a href={`${import.meta.env.BASE_URL.replace(/\/*$/, "/")}playground/`}
           >playground</a
         >: which bytes came from where, what checked them, and what the compiler
@@ -292,7 +291,7 @@ const marked = diagnosticEvents.map((event) => {
         </li>
         <li>
           <strong>
-            The colouring is the compiler's lexer or it is nothing, and this
+            The coloring is the compiler's lexer or it is nothing, and this
             build checked that.
           </strong>{" "}
           There is no grammar in the playground and there will not be one. A
@@ -301,22 +300,22 @@ const marked = diagnosticEvents.map((event) => {
           type paints from that same highlighter, and only after the page
           recovers the text out of the stream and finds it byte identical to the
           characters on screen. Otherwise it paints plain ink, because a listing
-          with no emphasis is worth more than a listing whose every keyword sits
+          with no emphasis beats a listing whose every keyword sits
           where no compiler put it. This build turned all{" "}
           {curatedSamples.length} recordings back into what a live lexer sends,
-          re-emphasised them through the live path, and required{" "}
+          re-emphasized them through the live path, and required{" "}
           {liveLinesChecked} lines and {liveWordsRebuilt} rule words to come
           back identical. It also required the check to refuse a stream that
           lies, and the emphasis pass to leave an already marked recording
           alone. Any one of those failing stops this page from building.
         </li>
         <li>
-          <strong>The type checking is not in this page, and the reason
+          <strong>The type checking here is recorded, and the reason
           changed.</strong> It used to be that the compiler could not report a
           diagnostic from wasm at all. Work on{" "}
           <code>wasm/compiler-in-browser</code> cleared that, so a checker in
           the page is reachable now and when one lands it feeds this same event
-          path. What is not reachable is running the program afterwards: a
+          path. The limit is running the program afterwards: a
           browser has no linker and producing a program out of a module needs
           one. So the diagnostics below are recorded, and the page says so
           rather than leaving a reader to assume.
@@ -325,8 +324,8 @@ const marked = diagnosticEvents.map((event) => {
           <strong>{differing.length} of the samples do not print the same
           thing on both targets, on purpose.</strong> The recording marks them,
           the menu marks them, and the card carries the sentence. They are in the
-          set because a target that cannot open a file is a thing worth knowing
-          about the target, and hiding them would make the other{" "}
+          set because a target that cannot open a file is a fact about the
+          target, and hiding them would make the other{" "}
           {identical.length} less believable.
         </li>
         {nativeOnlySamples.length > 0 && (
@@ -517,7 +516,7 @@ const marked = diagnosticEvents.map((event) => {
               ? "no capabilities"
               : caps.supported.map((cap) => CAPABILITY_LABEL[cap]).join(", ")}
           </dd>
-          <dt>colouring</dt>
+          <dt>coloring</dt>
           <dd>
             the compiler's own lexer, recorded by {highlightProvenance.command}
           </dd>
