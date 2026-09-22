@@ -1,10 +1,10 @@
 {
   "recorded": {
-    "compiler": "iyi 0.13.0 (built on Crystal 1.22.0-dev [1f79e251a] (2026-09-16))",
-    "commit": "1f79e251ae76b1ce03c398dc99675529f1b31825",
-    "machine": "Linux 7.2.4-1-cachyos x86_64, AMD Ryzen AI 9 465 w/ Radeon 880M",
+    "compiler": "iyi 0.14.0 (built on Crystal 1.22.0-dev [3c508a7a9] (2026-09-22))",
+    "commit": "3c508a7a90ad8bc6972fd75192a875919574a4b3",
+    "machine": "Linux 7.0.0-31-generic x86_64, QEMU Virtual CPU version 2.5+",
     "command": "npm run record:agent",
-    "when": "2026-09-20T11:18:01.910Z"
+    "when": "2026-09-22T12:27:14.570Z"
   },
   "project": [
     {
@@ -44,7 +44,7 @@
       "command": "iyi mod context --json app.iyi",
       "exitCode": 0,
       "payload": "stdout",
-      "stdout": "{\"file\":\"agent/app.iyi\",\"imports\":[{\"import\":\"app/greeter\",\"api\":{\"module\":\"app/greeter\",\"interface_hash\":\"14c937d996cd42f50dcce4594c179cca\",\"functions\":[{\"name\":\"polite\",\"parameters\":[\"name : String\"],\"returns\":\"String\",\"doc\":\"The exported surface carries its doc comment, so the grounding pack an agent\\nreads says what the function is for and not only what it takes.\",\"rendered\":\"def polite(name : String) : String\"},{\"name\":\"shout\",\"parameters\":[\"name : String\"],\"returns\":\"String\",\"rendered\":\"def shout(name : String) : String\"}],\"types\":[{\"name\":\"Greet\",\"kind\":\"trait\",\"visibility\":\"pub\",\"methods\":[{\"name\":\"greet\",\"parameters\":[],\"returns\":\"String\",\"required\":true,\"rendered\":\"abstract def greet : String\"}]}],\"impls\":[]}}]}\n",
+      "stdout": "{\"file\":\"agent/app.iyi\",\"imports\":[{\"import\":\"app/greeter\",\"api\":{\"module\":\"app/greeter\",\"interface_hash\":\"10b1f7b921b4fcc672b14883a39b35ef\",\"functions\":[{\"name\":\"polite\",\"parameters\":[\"name : String\"],\"returns\":\"String\",\"doc\":\"The exported surface carries its doc comment, so the grounding pack an agent\\nreads says what the function is for and not only what it takes.\",\"rendered\":\"def polite(name : String) : String\"},{\"name\":\"shout\",\"parameters\":[\"name : String\"],\"returns\":\"String\",\"rendered\":\"def shout(name : String) : String\"}],\"types\":[{\"name\":\"Greet\",\"kind\":\"trait\",\"visibility\":\"pub\",\"methods\":[{\"name\":\"greet\",\"parameters\":[],\"returns\":\"String\",\"required\":true,\"rendered\":\"abstract def greet : String\"}]}],\"impls\":[]}}]}\n",
       "stderr": ""
     },
     {
@@ -104,7 +104,7 @@
       "command": "iyi test --json .",
       "exitCode": 0,
       "payload": "stdout",
-      "stdout": "{\"tests\":[{\"file\":\"./app_test.iyi\",\"status\":\"pass\",\"seconds\":0.27}],\"passed\":1,\"failed\":0,\"skipped\":0}\n",
+      "stdout": "{\"tests\":[{\"file\":\"./app_test.iyi\",\"status\":\"pass\",\"seconds\":0.2}],\"passed\":1,\"failed\":0,\"skipped\":0}\n",
       "stderr": ""
     },
     {
@@ -114,7 +114,7 @@
       "command": "iyi mod diff before/app/greeter.iyimod after-body/app/greeter.iyimod",
       "exitCode": 0,
       "payload": "stdout",
-      "stdout": "module          app/greeter\ninterface       unchanged  what a consumer type-checks against\nimplementation  unchanged  the bodies a consumer compiles: macros, generics, the initialiser\nsource          changed    the file\n\nConsumers do not have to be rebuilt: what they compile against is the same.\n",
+      "stdout": "module          app/greeter\ninterface       unchanged  what a consumer type-checks against\nimplementation  unchanged  the bodies a consumer compiles: macros, generics, the initialiser\nsource          changed    the file\ndependencies    unchanged  what this module was compiled against\n\nConsumers do not have to be rebuilt: what they compile against is the same.\n",
       "stderr": ""
     },
     {
@@ -124,7 +124,7 @@
       "command": "iyi mod diff before/app/greeter.iyimod after-api/app/greeter.iyimod",
       "exitCode": 0,
       "payload": "stdout",
-      "stdout": "module          app/greeter\ninterface       changed    what a consumer type-checks against\nimplementation  unchanged  the bodies a consumer compiles: macros, generics, the initialiser\nsource          changed    the file\n\n  gone   def shout(name : String) : String\n  new    def shout(name : String, times : Int32) : String\n\nConsumers have to be rebuilt: what they compile against moved.\n",
+      "stdout": "module          app/greeter\ninterface       changed    what a consumer type-checks against\nimplementation  unchanged  the bodies a consumer compiles: macros, generics, the initialiser\nsource          changed    the file\ndependencies    unchanged  what this module was compiled against\n\n  gone   def shout(name : String) : String\n  new    def shout(name : String, times : Int32) : String\n\nConsumers have to be rebuilt: what they compile against moved.\n",
       "stderr": ""
     }
   ],
@@ -135,7 +135,7 @@
     "bytes": 731,
     "sourceBytes": 707,
     "interfaceHashes": {
-      "app/greeter": "14c937d996cd42f50dcce4594c179cca"
+      "app/greeter": "10b1f7b921b4fcc672b14883a39b35ef"
     }
   },
   "suggested": [
@@ -167,7 +167,7 @@
       },
       "serverInfo": {
         "name": "iyi",
-        "version": "0.13.0"
+        "version": "0.14.0"
       }
     },
     "tools": [
