@@ -1,28 +1,66 @@
 ---
+/**
+ * How a reader gets the compiler.
+ *
+ * TWO INSTALLERS SINCE 0.14.0. `install.sh` fetches a tarball for `uname`;
+ * `install.ps1` fetches the zip that release was the first to publish. They
+ * are not one command with a flag, so the page carries both and puts the
+ * reader's own first: `src/components/Platform.astro` is the switch and
+ * `src/lib/platform.ts` is what it decides on.
+ *
+ * Every command on this page is quoted out of README.md by
+ * scripts/samples.mjs, and every file name and URL is built from what the two
+ * installers themselves ask a release for, through
+ * scripts/install-targets.mjs. A machine's name is README.md's own word for
+ * it. Nothing here is typed.
+ */
 import Page from "../layouts/Page.astro";
 import Measure from "../components/Measure.astro";
+import Platform from "../components/Platform.astro";
 import Quote from "../components/Quote.astro";
-import { latestRelease, releaseAssets, releaseUrl } from "../lib/release";
+import { latestRelease, releaseAssets, releaseUrl, windowsAsset } from "../lib/release";
 
 const base = import.meta.env.BASE_URL;
 const release = latestRelease();
 const assets = releaseAssets(release);
+const windows = windowsAsset(release);
+
+/* The two tab labels, and the sentence in the summary, out of the same
+ * machine names the download links carry. */
+const posixLabel = assets.map((asset) => asset.machine).join(" / ");
+const tarballs = assets.map((asset) => asset.target).join(" or ");
 ---
 
 <Page
   title="Install iyi"
-  summary="Install iyi with one command: the latest release into ~/.local, on Linux x86-64 or macOS arm64, then run hello. Or unpack the tarball by hand, or build from source."
+  summary={`Install iyi with one command: the latest release on ${posixLabel} or ${windows.machine}, then run hello. Or unpack the archive by hand, or build from source.`}
 >
   <section class="wrap head">
     <p class="label">Install, <a href={releaseUrl(release)}>version {release.version}</a></p>
     <h1>One command, then hello.</h1>
     <p class="lede">
-      The installer is a POSIX shell script over <code>curl</code> and{" "}
-      <code>tar</code>. It picks the release for your machine, unpacks it into{" "}
-      <code>~/.local</code>, and checks that the binary starts. The second line
-      runs the first sample it shipped with.
+      Two installers, one per family: a POSIX shell script over{" "}
+      <code>curl</code> and <code>tar</code>, and a PowerShell one over{" "}
+      <code>Invoke-WebRequest</code> and .NET's own zip reader. Each picks the
+      release for your machine, checks it against the checksums the release
+      publishes before it unpacks anything, and leaves a compiler with nothing
+      to configure. The second line runs the first sample it shipped with.
     </p>
-    <Quote id="install" as="shell" caption="install, then run hello" copy />
+    <Platform
+      id="install-oneliner"
+      label="The machine you are installing on"
+      posix={posixLabel}
+      windows={windows.machine}
+    >
+      <Quote slot="posix" id="install" as="shell" caption="install, then run hello" copy />
+      <Quote
+        slot="windows"
+        id="install_windows"
+        as="shell"
+        caption="install on Windows, then run hello"
+        copy
+      />
+    </Platform>
   </section>
 
   <section class="wrap">
@@ -31,9 +69,10 @@ const assets = releaseAssets(release);
         <h2>What it does</h2>
         <ul class="points">
           <li>
-            <strong>Picks the tarball for <code>uname</code>:</strong>{" "}
-            <code>linux-x86_64</code> or <code>darwin-arm64</code>. Anything
-            else is refused by name, with a pointer to building from source.
+            <strong>Picks the archive for your machine:</strong> the tarball
+            for <code>uname</code>, <code>{tarballs}</code>, or the{" "}
+            <code>{windows.target}</code> zip on Windows. Anything else is
+            refused by name, with a pointer to building from source.
           </li>
           <li>
             <strong>Follows the latest release</strong> on GitHub, without the
@@ -41,13 +80,17 @@ const assets = releaseAssets(release);
             <code>IYI_VERSION={release.version}</code> pins one.
           </li>
           <li>
-            <strong>Unpacks into <code>~/.local</code>.</strong>{" "}
-            <code>IYI_PREFIX</code> moves it; the tarball is relocatable.
+            <strong>Checks what it downloaded</strong> against the release's
+            own checksums, and unpacks nothing when they disagree. The{" "}
+            <a href={`${base}download/`}>download page</a> quotes both
+            installers doing it.
           </li>
           <li>
-            <strong>Nothing to configure.</strong> <code>bin/iyi</code> finds
-            its libraries beside itself. No <code>IYI_PATH</code>, no LLVM to
-            install: LLVM is inside the binary.
+            <strong>Unpacks into <code>~/.local</code></strong>, or into{" "}
+            <code>%LOCALAPPDATA%\Programs\iyi</code> on Windows, where it also
+            adds <code>bin</code> to your own <code>PATH</code> and needs no
+            administrator. <code>IYI_PREFIX</code> moves either one; both
+            archives are relocatable.
           </li>
         </ul>
       </div>
@@ -73,6 +116,16 @@ const assets = releaseAssets(release);
             <code>test</code>, <code>doc</code>, <code>mod</code>,{" "}
             <code>lsp</code> and <code>mcp</code>, all one binary.
           </li>
+          <li>
+            <strong>Nothing to configure</strong> — <code>bin/iyi</code> finds
+            its libraries beside itself, and LLVM is inside the binary. What
+            no archive brings is a C toolchain: a program is linked by{" "}
+            <code>cc</code>, and on Windows by <code>cl.exe</code>, so that
+            machine needs the Visual C++ build tools. The compiler finds them
+            and the Windows SDK through the registry, so no developer prompt
+            and nothing on <code>PATH</code> is needed — and the installer
+            says so when the toolset is missing.
+          </li>
         </ul>
       </div>
     </div>
@@ -81,23 +134,46 @@ const assets = releaseAssets(release);
   <section class="wrap">
     <h2>By hand</h2>
     <p class="sub">
-      The installer does two things you can do yourself. Download the tarball
-      for your machine, from the release this page is about:
+      The installer does two things you can do yourself. Download the archive
+      for your machine, from the release this page is about, and unpack it:
     </p>
-    <ul class="assets">
-      {assets.map((asset) => (
-        <li>
-          <span class="machine">{asset.machine}</span>
-          <a class="url" href={asset.url}><code>{asset.url}</code></a>
-        </li>
-      ))}
-    </ul>
+    <Platform
+      id="install-by-hand"
+      label="The machine you are unpacking on"
+      posix={posixLabel}
+      windows={windows.machine}
+    >
+      <div slot="posix">
+        <ul class="assets">
+          {assets.map((asset) => (
+            <li>
+              <span class="machine">{asset.machine}</span>
+              <a class="url" href={asset.url}><code>{asset.url}</code></a>
+            </li>
+          ))}
+        </ul>
+        <Quote id="install_manual" as="shell" caption="the same two lines, by hand" copy />
+      </div>
+      <div slot="windows">
+        <ul class="assets">
+          <li>
+            <span class="machine">{windows.machine}</span>
+            <a class="url" href={windows.url}><code>{windows.url}</code></a>
+          </li>
+        </ul>
+        <Quote
+          id="install_manual_windows"
+          as="shell"
+          caption="the same two lines, by hand"
+          copy
+        />
+      </div>
+    </Platform>
     <p class="sub">
       Older versions, and the notes for each, are under{" "}
-      <a href="https://github.com/iyilang/iyi/releases">releases</a>. Then it
-      is the two lines the installer runs:
+      <a href="https://github.com/iyilang/iyi/releases">releases</a>. The
+      checksums are published beside them, which is what the installers read.
     </p>
-    <Quote id="install_manual" as="shell" caption="the same two lines, by hand" copy />
   </section>
 
   <section class="wrap">

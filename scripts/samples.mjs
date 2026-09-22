@@ -238,9 +238,13 @@ const WANTED = {
   bad_body: { lang: "console", anchor: "does not implement Kemal::Router::IntoBody" },
   // `sh`, not `console`: README.md gives the two install lines as commands to
   // run, with no prompt and no output, so the site sets them as commands and
-  // does not draw a prompt the README never printed.
+  // does not draw a prompt the README never printed. The same on the Windows
+  // side, where the fence says `powershell` and the two lines are the one
+  // install.ps1 runs and the hello it leaves behind.
   install: { lang: "sh", anchor: "install.sh | sh" },
   install_manual: { lang: "sh", anchor: "tar -xzf iyi-" },
+  install_windows: { lang: "powershell", anchor: "install.ps1 | iex" },
+  install_manual_windows: { lang: "powershell", anchor: "Expand-Archive iyi-" },
 };
 
 const blocks = fencedBlocks(readmeLines);

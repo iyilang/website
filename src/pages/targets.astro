@@ -46,12 +46,36 @@ interface Runner {
   id: string;
   name: string;
   line: number;
+  runsOn: string;
+  steps: string[];
+}
+
+/* A job that executes somewhere other than the machine everything is built
+ * on, out of its `runs-on` label: scripts/proofs.mjs records the label and
+ * the operating system half of it, so this page can name the jobs that ran on
+ * a platform without deciding for itself which ones those are. */
+interface Native {
+  id: string;
+  name: string;
+  line: number;
+  runsOn: string;
+  os: string;
   steps: string[];
 }
 
 const ranCount = SPELLED[platforms.ran.length];
 const targets = proofs.targets as unknown as TargetProof[];
 const runners = proofs.runners as unknown as Runner[];
+const native = proofs.native as unknown as Native[];
+const onWindows = native.filter((job) => job.os === "windows");
+/* The Windows jobs that are not in the list above: the same record, minus
+ * whatever already appears as a consumer of the cross-built objects, so the
+ * page does not print one job twice. */
+const alsoOnWindows = onWindows.filter((job) => !runners.some((runner) => runner.id === job.id));
+/* Which of them a tag actually waits for. Counted rather than asserted: "a
+ * Windows failure stops a release" is the claim 0.14.0 makes, and the page
+ * states it only for the jobs the workflow's own `needs` list names. */
+const gatedOnWindows = onWindows.filter((job) => proofs.gate.needs.includes(job.id));
 const audited = targets.filter((entry) => entry.audited);
 const typecheck = proofs.loops.typecheck;
 const audit = proofs.loops.audit;
@@ -205,14 +229,35 @@ const otherSpelling = audit.values.filter(
       {runners.map((runner) => (
         <li>
           <span class="job">{runner.name}</span>
-          <span class="steps">{runner.steps.slice(0, 3).join(" / ")}</span>
+          <span class="steps">
+            {runner.runsOn} / {runner.steps.slice(0, 2).join(" / ")}
+          </span>
         </li>
       ))}
     </ul>
     <p class="sub">
-      Windows is in that list and not in the run set: its objects are built and
-      probed for what they ask the operating system for, and no job runs a
-      Windows binary and compares what it printed. The{" "}
+      Windows is in that list and not in the run set, and those are two
+      different statements. The run set is the targets whose output is compared
+      against what the same program printed on the machine that compiled it;
+      Windows binaries are executed all the same, on the machines named beside
+      each job above, and on the rest of the workflow's Windows jobs, which
+      consume no cross-built object because they build their own there:
+    </p>
+    <ul class="runners">
+      {alsoOnWindows.map((job) => (
+        <li>
+          <span class="job">{job.name}</span>
+          <span class="steps">
+            {job.runsOn} / {job.steps.slice(0, 2).join(" / ")}
+          </span>
+        </li>
+      ))}
+    </ul>
+    <p class="sub">
+      That is {onWindows.length} jobs on a Windows machine every build, and{" "}
+      {gatedOnWindows.length === onWindows.length ? "every one" : `${gatedOnWindows.length} of them`}{" "}
+      is on the list <code>{proofs.gate.id}</code> waits for, so a red one
+      stops a tag rather than being read after it. The{" "}
       <a href={`${base}why/#portability`}>why page</a> says what that means for
       somebody considering it.
     </p>

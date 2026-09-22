@@ -64,24 +64,62 @@ const lines = readFileSync(resolve(repo, WORKFLOW), "utf8").replace(/\n$/, "").s
 // ---------------------------------------------------------------------------
 
 const jobs = [];
+/* A `needs:` written as a flow sequence wraps: the release job names
+ * seventeen jobs over four lines. Read one line at a time, that list came
+ * back six long and the page built on it said a platform's jobs do not gate
+ * a release when they do. So an unclosed `[` keeps the rest of the list. */
+const split = (raw) =>
+  raw
+    .replace(/[[\]]/g, "")
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+let wrapped = null;
+
 lines.forEach((line, index) => {
   const start = /^ {2}([a-z][a-z0-9-]*):\s*$/.exec(line);
-  if (start) jobs.push({ id: start[1], line: index + 1, name: null, needs: [], steps: [] });
+  if (start) {
+    jobs.push({ id: start[1], line: index + 1, name: null, runsOn: null, needs: [], steps: [] });
+  }
   if (jobs.length === 0) return;
   const job = jobs[jobs.length - 1];
+
+  if (wrapped) {
+    wrapped.raw += ` ${line.trim()}`;
+    if (line.includes("]")) {
+      wrapped.job.needs = split(wrapped.raw);
+      wrapped = null;
+    }
+    return;
+  }
+
   const name = /^ {4}name:\s*"?([^"]+?)"?\s*$/.exec(line);
   if (name) job.name ??= name[1];
+  /* Where the steps of this job actually execute. A cross-compiled object is
+   * evidence that a target's code can be produced; a job whose `runs-on` is
+   * that platform is evidence that what was produced was executed there, and
+   * the two are the difference the platforms page is written to keep apart. */
+  const runsOn = /^ {4}runs-on:\s*(\S+)\s*$/.exec(line);
+  if (runsOn) job.runsOn ??= runsOn[1];
   const needs = /^ {4}needs:\s*(.+)$/.exec(line);
   if (needs) {
-    job.needs = needs[1]
-      .replace(/[[\]]/g, "")
-      .split(",")
-      .map((entry) => entry.trim())
-      .filter(Boolean);
+    const raw = needs[1].trim();
+    if (raw.startsWith("[") && !raw.includes("]")) {
+      wrapped = { job, raw };
+    } else {
+      job.needs = split(raw);
+    }
   }
   const step = /^ {6}- name:\s*(.+?)\s*$/.exec(line);
   if (step) job.steps.push({ name: step[1], line: index + 1 });
 });
+
+if (wrapped) {
+  die(
+    `${WORKFLOW}'s \`needs:\` for ${wrapped.job.id} opens a list that never ` +
+      `closes, so the jobs that gate it cannot be read`,
+  );
+}
 
 if (jobs.length === 0) die(`${WORKFLOW} declares no job this script can read, so there is nothing to cite`);
 
@@ -214,17 +252,64 @@ if (crosses.length === 0) {
   die(`${WORKFLOW} cross-compiles for no named target, so the objects the run jobs consume come from nowhere this script can see`);
 }
 
+/* The job a tag has to get past: the one that waits on the most others.
+ * Counted rather than matched by name, the way the producer below is, because
+ * the job whose `needs` list is the longest is the join of the graph whatever
+ * it is called. What a page does with it is say whether a platform's jobs are
+ * on that list - a job nothing waits for cannot stop a release, and "gated on
+ * Windows" is exactly the claim 0.14.0 makes. */
+const gate = [...jobs].sort((a, b) => b.needs.length - a.needs.length)[0];
+if (!gate || gate.needs.length === 0) {
+  die(`${WORKFLOW} has no job that waits on another, so nothing in it gates anything`);
+}
+
 // The job that produces the objects other jobs run: the one that cross-compiles
 // most, found by counting rather than by name. Its runners are the jobs that
 // say they need it. The dependency edge is the fact here; a job that stops
 // needing those objects stops appearing as evidence.
+//
+// The gate is not one of them, though it needs the producer like the rest: it
+// waits on every job in the workflow, and a list of what runs a cross-built
+// object is a list of jobs that run one.
 const compiles = new Map();
 for (const cross of crosses) compiles.set(cross.job, (compiles.get(cross.job) ?? 0) + 1);
 const producerId = [...compiles].sort((a, b) => b[1] - a[1])[0]?.[0];
 const producer = jobs.find((job) => job.id === producerId);
-const runners = jobs.filter((job) => producer && job.needs.includes(producer.id));
+const runners = jobs.filter(
+  (job) => producer && job.id !== gate.id && job.needs.includes(producer.id),
+);
 if (!producer || runners.length === 0) {
   die(`${WORKFLOW} has no job whose objects another job runs, so the "run" column of the portability table would be empty`);
+}
+
+/* The jobs that execute somewhere other than the machine everything is built
+ * on. A GitHub runner label names its operating system (`ubuntu-*`,
+ * `windows-*`, `macos-*`), so the label is the fact: a job on `windows-2025`
+ * ran what it ran on Windows, whether or not that target is in the run set
+ * README states. This is how the site says the compiler is built and
+ * exercised on a platform without a page deciding which job counts.
+ *
+ * The build machine itself is excluded by the same rule, not by name: it is
+ * the runner the producer uses, so a workflow that moved off Ubuntu would
+ * follow rather than break this. */
+const home = producer.runsOn ?? "";
+const native = jobs
+  .filter((job) => job.runsOn && job.runsOn !== home && job.steps.length > 0)
+  .map(({ id, name, line, runsOn, steps }) => ({
+    id,
+    name,
+    line,
+    runsOn,
+    /* The OS half of the label, which is what a page names a platform by. */
+    os: runsOn.split("-")[0],
+    steps: steps.map((step) => step.name),
+  }));
+if (native.length === 0) {
+  die(
+    `${WORKFLOW} runs every job on ${home || "one runner"}, so nothing in it ` +
+      `says an iyi program was executed on a platform other than the one it ` +
+      `was built on, and the pages that say so would be saying it alone`,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -261,13 +346,16 @@ const record = {
     typecheck,
     audit: { ...audit, samples: samples.values },
   },
-  producer: { id: producer.id, name: producer.name, line: producer.line },
-  runners: runners.map(({ id, name, line, steps }) => ({
+  producer: { id: producer.id, name: producer.name, line: producer.line, runsOn: producer.runsOn },
+  runners: runners.map(({ id, name, line, runsOn, steps }) => ({
     id,
     name,
     line,
+    runsOn,
     steps: steps.map((step) => step.name),
   })),
+  native,
+  gate: { id: gate.id, name: gate.name, line: gate.line, needs: gate.needs },
   targets: perTarget,
 };
 
@@ -279,5 +367,8 @@ console.log(
     `(${typecheck.cite}), ${audit.values.length} audited over ` +
     `${samples.values.length} programs (${audit.cite}), ${crosses.length} named ` +
     `cross-compiles, ${runners.length} jobs run what "${producer.name}" builds, ` +
+    `${native.length} jobs on a machine that is not ${producer.runsOn} ` +
+    `(${[...new Set(native.map((job) => job.runsOn))].join(", ")}), ` +
+    `${gate.needs.length} jobs gate "${gate.id}", ` +
     `at ${commit.slice(0, 9)}`,
 );

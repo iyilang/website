@@ -1,0 +1,125 @@
+---
+/**
+ * Two blocks, one per family of operating system, and the reader's machine
+ * decides which is on top.
+ *
+ * WHY. 0.14.0 publishes a Windows build, and the two installers are not
+ * spellings of one command: one is piped into `sh` and unpacks a tarball into
+ * `~/.local`, the other is piped into `iex` and unpacks a zip into
+ * `%LOCALAPPDATA%`. Printing both and leaving a reader to work out which is
+ * theirs puts a command in front of every reader that they must not run.
+ *
+ * WHAT IS GUESSED AND WHAT IS NOT. The browser's word about the operating
+ * system decides the order of two blocks that are both already in the page -
+ * nothing is fetched, refused or rewritten on it, and `src/lib/platform.ts`
+ * says why that line is where it is. The tablist appears only once a script
+ * has run (the `data-js` handshake the masthead uses), so without one the
+ * page is both blocks, each captioned, rather than one behind a dead control.
+ *
+ * The labels are the machines the release ships for, in README.md's words for
+ * them through scripts/install-targets.mjs. Nothing here is typed.
+ */
+interface Props {
+  /** Unique on the page: the tabs and panels are wired to each other by it. */
+  id: string;
+  /** What this switch is a switch between, for a screen reader. */
+  label: string;
+  posix: string;
+  windows: string;
+}
+
+const { id, label, posix, windows } = Astro.props;
+
+const faces = [
+  { key: "posix", text: posix },
+  { key: "windows", text: windows },
+] as const;
+---
+
+<div class="platform" data-platform-switch>
+  <div class="tabs" role="tablist" aria-label={label}>
+    {
+      faces.map((face, index) => (
+        <button
+          type="button"
+          role="tab"
+          id={`${id}-tab-${face.key}`}
+          class="tab"
+          data-platform={face.key}
+          aria-controls={`${id}-panel-${face.key}`}
+          aria-selected={index === 0 ? "true" : "false"}
+          tabindex={index === 0 ? 0 : -1}
+        >
+          {face.text}
+        </button>
+      ))
+    }
+  </div>
+
+  {
+    faces.map((face) => (
+      <div
+        class="panel"
+        id={`${id}-panel-${face.key}`}
+        data-platform-panel={face.key}
+        role="tabpanel"
+        aria-labelledby={`${id}-tab-${face.key}`}
+      >
+        <slot name={face.key} />
+      </div>
+    ))
+  }
+</div>
+
+<script>
+  import { wirePlatformSwitch } from "../lib/platform";
+  wirePlatformSwitch();
+</script>
+
+<style>
+  /* Until a script runs, there is no switch and no hidden half: both panels
+   * stand, in source order, and the buttons are not drawn at all. */
+  .tabs {
+    display: none;
+    gap: 0.4rem;
+    margin-block-end: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .platform[data-js="true"] .tabs {
+    display: flex;
+  }
+
+  .tab {
+    font-family: var(--font-sans);
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--graphite);
+    background: var(--paper);
+    border: var(--hair) solid var(--boundary);
+    border-radius: 6px;
+    padding: 0.3rem 0.8rem;
+    cursor: pointer;
+  }
+
+  .tab:hover {
+    color: var(--ink);
+    border-color: var(--graphite);
+  }
+
+  .tab[aria-selected="true"] {
+    color: var(--paper);
+    background: var(--ink);
+    border-color: var(--ink);
+  }
+
+  /* Both panels are in the flow without a script, so they need the spacing a
+   * pair of blocks needs; with one, only ever one is displayed. */
+  .panel + .panel {
+    margin-block-start: 1rem;
+  }
+
+  .platform[data-js="true"] .panel + .panel {
+    margin-block-start: 0;
+  }
+</style>

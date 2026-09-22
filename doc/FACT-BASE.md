@@ -142,6 +142,17 @@ From README.md metrics (measured 2026-08-17, rows 15-21):
 | Binary size (hello) | 36 KB, starts in 1.6 ms |
 | Portability | Compiles for 9 targets, runs on 4 (x86-64 glibc, x86-64 musl, aarch64 under emulation, wasm32-wasi) |
 
+**Windows runtime support:**
+From README.md, lines 1102-1108, as of 0.14.0 (it was "it compiles, it links,
+and what it prints at run time cannot be trusted" until then):
+
+> **Windows x86-64 runs the runtime, the sockets and the gates.** `x86_64-windows-msvc` compiles, links and runs: `kernel32`, `ws2_32`, `advapi32` and the *dynamic* CRT are the whole link line […] On a Windows 11 machine the compiler builds from source with the Visual C++ build tools and an LLVM of Crystal's own, and of the 87 programs under `bench/` **84 pass** unattended
+
+What is still missing there, from the same entry: no subprocess, no
+`Time::Location`, a symbolic link needs a privilege Windows does not hand out,
+and `iyi daemon` does not exist on that platform because its server loop is
+`poll(2)` and its worker is `fork`.
+
 ## Structural Measurements (Machine-Independent, CI-Gated)
 
 These nine measurements are checked by `python3 bench/doc_numbers.py` on every build. Silent drift is structurally impossible: the script fails if a quoted number diverges from the source. Measured at commit 03d013243, 2026-08-23 22:43:42 UTC:
@@ -297,11 +308,6 @@ From samples/iyi/generics.iyi, "Not yet implemented" section:
 From samples/iyi/generics.iyi:
 
 > iyi has no specialised impls. Overlapping impls need a rule for which one wins, and that rule has to stay sound when the two live in modules compiled separately.
-
-**Windows runtime support:**
-From README.md, lines 298-303:
-
-> Darwin is still "the code generator has no objection", and needs a runner this workflow does not have. Windows is worse than that and gets its own entry below: it compiles, it links, and what it prints at run time cannot be trusted.
 
 ### What Is Explicitly Unsupported
 

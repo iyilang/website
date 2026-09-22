@@ -37,10 +37,15 @@
 //     target's own `uname` components against the phrase's words, so the only
 //     spellings this file knows are the two aliases below. An unmatched or
 //     ambiguous phrase fails and names itself; it is never guessed;
-//   * install.sh is the only installer read here. Windows has its own
-//     (install.ps1) and its own archive, a zip rather than a tarball, so it is
-//     not one of this record's targets and src/lib/release.ts builds no URL
-//     for it.
+//   * install.ps1, which is the same three questions for the one platform
+//     install.sh refuses. 0.14.0 is the first release to publish a Windows
+//     build, and it is a zip rather than a tarball with an installer of its
+//     own, so it is recorded beside the tarballs instead of among them: one
+//     target, read out of the `$Asset` line that names it, cross-checked
+//     against the refusal that script prints for a 32-bit Windows and against
+//     the file name README.md spells out under "Getting it". Its prose name
+//     is README.md's own ("Windows x86-64"), found by the target's own
+//     components rather than assembled from them.
 //
 // WHAT IT DOES NOT DO. It does not check that a release actually published the
 // tarballs, or that a URL resolves. It checks that the site offers exactly what
@@ -59,6 +64,7 @@ const repo = process.env.IYI_REPO ? resolve(process.env.IYI_REPO) : resolve(site
 const out = resolve(site, "src", "generated");
 
 const SOURCE = "install.sh";
+const WINDOWS = "install.ps1";
 const CLAIM = "README.md";
 
 /**
@@ -272,6 +278,101 @@ if (!script.includes("releases/latest") || !script.includes("*/tag/v")) {
   );
 }
 
+/* WINDOWS. install.sh refuses the platform by name, so nothing above this
+ * line can see the zip 0.14.0 was the first release to publish. install.ps1
+ * is where it is named, and it is asked the same three questions: what the
+ * asset is called, where it is fetched from, and which repository both are
+ * of. Its strings are carried across as PowerShell wrote them, `$Version`
+ * included, the way install.sh's are. */
+const ps = read(WINDOWS);
+
+const psRepo = /^\$Repo = '([^']+)'/m.exec(ps);
+const psAsset = /^\$Asset = "([^"]+)"/m.exec(ps);
+const psBase = /\$ReleaseUrl = "([^"]+)"/.exec(ps);
+if (!psRepo || !psAsset || !psBase) {
+  throw new Error(
+    `install-targets: ${WINDOWS} no longer states its \`$Repo\`, \`$Asset\` ` +
+      `and \`$ReleaseUrl\` in the shape this script reads, so the site cannot ` +
+      `build the URL the Windows installer builds and would be inventing one.`,
+  );
+}
+
+if (psRepo[1] !== slug[1]) {
+  throw new Error(
+    `install-targets: ${SOURCE} downloads from ${slug[1]} and ${WINDOWS} from ` +
+      `${psRepo[1]}. One release cannot live in two repositories, and the ` +
+      `site would be linking a Windows reader somewhere else.`,
+  );
+}
+
+if (!psAsset[1].includes("$Version")) {
+  throw new Error(
+    `install-targets: ${WINDOWS}'s \`$Asset\` is "${psAsset[1]}", which does ` +
+      `not use $Version. The site fills that in from the recorded release, so ` +
+      `a name that no longer varies with it would be a download link frozen ` +
+      `at one version.`,
+  );
+}
+
+/* The target the zip is for, read out of the name the script asks the release
+ * for rather than typed here: one token, between the version and the
+ * extension, the way `iyi-$version-$target.tar.gz` carries one. */
+const zip = /\$Version-([a-z0-9]+-[a-z0-9_]+)\.zip$/.exec(psAsset[1]);
+if (!zip) {
+  throw new Error(
+    `install-targets: ${WINDOWS} asks the release for "${psAsset[1]}", which ` +
+      `is not \`...$Version-<os>-<arch>.zip\`. The target a Windows reader is ` +
+      `offered is read out of that name, and this script will not guess it.`,
+  );
+}
+const windowsTarget = zip[1];
+
+/* The refusal, which is this installer's second statement of the same fact:
+ * a machine with no build is told which one there is. install.sh's `*)` arm
+ * and this are the same gate, in the two languages. */
+const refused = [...ps.matchAll(/Die "([^"]+)"/g)].map(([, line]) => line);
+if (!refused.some((line) => line.includes(windowsTarget))) {
+  throw new Error(
+    `install-targets: ${WINDOWS} fetches ${windowsTarget} and no refusal in ` +
+      `it names that target, so the script and its own error messages no ` +
+      `longer agree about what a release ships for Windows.`,
+  );
+}
+
+/* And README.md's statement of it, under "Getting it", where the zip is
+ * spelled with a version rather than a placeholder. The asset template is
+ * turned into the pattern that file would have to match, so a renamed asset
+ * fails here instead of becoming a 404 on the download page. */
+const spelled = new RegExp(
+  psAsset[1].replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace("\\$Version", "\\d+\\.\\d+\\.\\d+"),
+);
+if (!spelled.test(readme)) {
+  throw new Error(
+    `install-targets: ${CLAIM} no longer spells a file of the shape ` +
+      `"${psAsset[1]}", so ${WINDOWS} is the only statement of what a release ` +
+      `publishes for Windows and this script has nothing to cross-check.`,
+  );
+}
+
+/* The prose name, in README.md's own words. The pattern is built from the
+ * target's own components and the aliases above, and what is recorded is the
+ * text README.md matched with, so the spelling a reader is shown is the
+ * repository's and never this file's. */
+const spell = (part) => ALIAS.get(part) ?? part;
+const [windowsOs, windowsArch] = windowsTarget.split("-");
+const spoken = new RegExp(
+  `\\b${spell(windowsOs)}[ -]${spell(windowsArch).replace(/[-_]/g, "[-_]")}\\b`,
+  "i",
+).exec(readme);
+if (!spoken) {
+  throw new Error(
+    `install-targets: ${CLAIM} never names ${windowsTarget} in prose, so ` +
+      `there is no sentence in the repository to take the name beside the zip ` +
+      `from. The other targets take theirs from the sentence under the ` +
+      `one-liner; this one is named wherever the README names it.`,
+  );
+}
+
 const commit = execFileSync("git", ["-C", repo, "rev-parse", "--short", "HEAD"], {
   encoding: "utf8",
 }).trim();
@@ -279,7 +380,7 @@ const commit = execFileSync("git", ["-C", repo, "rev-parse", "--short", "HEAD"],
 const record = {
   provenance: {
     generator: "scripts/install-targets.mjs",
-    source: SOURCE,
+    source: `${SOURCE}, ${WINDOWS}`,
     claim: CLAIM,
     commit,
   },
@@ -289,6 +390,16 @@ const record = {
   asset: asset[1],
   download: base[1].replace("$repo", slug[1]),
   targets,
+  /* The zip, beside the tarballs rather than among them: another archive,
+   * another installer, and one target. A page that offers a Windows reader
+   * anything offers exactly this. */
+  windows: {
+    source: WINDOWS,
+    target: windowsTarget,
+    machine: spoken[0],
+    asset: psAsset[1],
+    download: psBase[1].replace("$Repo", slug[1]),
+  },
 };
 
 mkdirSync(out, { recursive: true });
@@ -297,5 +408,7 @@ writeFileSync(resolve(out, "install-targets.json"), `${JSON.stringify(record, nu
 console.log(
   `install-targets: ${targets.length} published by ${SOURCE} ` +
     `(${targets.map((t) => `${t.target} = ${t.machine}`).join(", ")}), ` +
-    `asset ${record.asset} under ${record.download}, at ${commit}`,
+    `asset ${record.asset} under ${record.download}; ${WINDOWS} publishes ` +
+    `${record.windows.target} = ${record.windows.machine} as ` +
+    `${record.windows.asset}, at ${commit}`,
 );

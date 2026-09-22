@@ -41,6 +41,7 @@ const repo = process.env.IYI_REPO ? resolve(process.env.IYI_REPO) : resolve(site
 const out = resolve(site, "src", "generated", "download.json");
 
 const INSTALLER = "install.sh";
+const WINDOWS = "install.ps1";
 const WORKFLOW = ".github/workflows/iyi.yml";
 
 const die = (message) => {
@@ -53,6 +54,7 @@ const commit = execFileSync("git", ["-C", repo, "rev-parse", "HEAD"], {
 
 const installer = readFileSync(resolve(repo, INSTALLER), "utf8").replace(/\n$/, "").split("\n");
 const workflow = readFileSync(resolve(repo, WORKFLOW), "utf8").replace(/\n$/, "").split("\n");
+const powershell = readFileSync(resolve(repo, WINDOWS), "utf8").replace(/\n$/, "").split("\n");
 
 /**
  * A span of a file, found by the line that opens it and the line that closes
@@ -125,6 +127,26 @@ const tamper = span(
   /^\s*\[ ! -e tampered\/bin\/iyi \]$/,
 );
 
+// The same two things on the Windows side, out of the installer a Windows
+// reader is told to run. Left out until 0.14.0 because there was no Windows
+// release to install; a page that quotes one installer's verification and
+// tells half its readers to run the other has told them nothing.
+const windowsVerify = span(
+  powershell,
+  WINDOWS,
+  "windows verify",
+  /^\s*# The checksum, and no way past it\./,
+  /^\s*Say "verified: sha256 \$actual"$/,
+);
+
+const windowsTamper = span(
+  workflow,
+  WORKFLOW,
+  "windows tamper",
+  /^\s*# One hex digit wrong\./,
+  /^\s*if \(Test-Path \(Join-Path \$tampered 'bin\\iyi\.exe'\)\) \{ throw 'something was unpacked anyway' \}$/,
+);
+
 // ---------------------------------------------------------------------------
 // What the passages say, read out of them rather than about them
 // ---------------------------------------------------------------------------
@@ -192,6 +214,25 @@ if (wantedFile[1] !== writtenFile[1]) {
 }
 const checksums = wantedFile[1];
 
+// And the same file on the Windows side. One SHA256SUMS covers every archive
+// a release publishes, so the two installers and the release job are three
+// statements of one name; a Windows reader is told the zip is verified only
+// while the script they run reads the file the release writes.
+const windowsWanted = /Fetch '([A-Za-z0-9._]+)'/.exec(windowsVerify.text);
+if (!windowsWanted) die(`${WINDOWS}'s verification no longer downloads a file this script can name`);
+if (windowsWanted[1] !== checksums) {
+  die(
+    `${WINDOWS} downloads ${windowsWanted[1]} and ${WORKFLOW} publishes ` +
+      `${checksums}, so the zip would be checked against a file the release ` +
+      `does not write`,
+  );
+}
+
+// The command that computes the zip's digest, so a Windows reader doing it by
+// hand runs what the installer runs.
+const windowsChecker = /\(Get-FileHash [^)]*-Algorithm (\w+)\)/.exec(windowsVerify.text);
+if (!windowsChecker) die(`${WINDOWS} no longer computes a digest with a command this script can read`);
+
 // The two commands the installer uses to compute a digest, in the order it
 // tries them. A reader doing it by hand runs the same one.
 const checkers = [...verify.text.matchAll(/^\s*(?:actual="\$\()(\w+)((?: -\w \d+)?) "/gm)].map((match) => ({
@@ -212,15 +253,26 @@ if (!asset) die(`${INSTALLER} no longer names its asset, which is the file a rea
 const record = {
   provenance: {
     generator: "scripts/download.mjs",
-    source: `${INSTALLER}, ${WORKFLOW}`,
+    source: `${INSTALLER}, ${WINDOWS}, ${WORKFLOW}`,
     commit,
   },
-  passages: { knobs, refusal, verify, publish, tamper },
+  passages: {
+    knobs,
+    refusal,
+    verify,
+    publish,
+    tamper,
+    windowsVerify,
+    windowsTamper,
+  },
   knobs: knobList,
   accepted,
   refused: refused[1],
   checksums,
   checkers,
+  /* PowerShell's own, which is one command rather than a preference order:
+   * `Get-FileHash` is in the shell and needs nothing installed. */
+  windowsChecker: { tool: "Get-FileHash", algorithm: windowsChecker[1] },
   asset: asset[1],
 };
 
@@ -230,6 +282,7 @@ writeFileSync(out, `${JSON.stringify(record, null, 2)}\n`, "utf8");
 console.log(
   `download: ${knobList.length} knobs, ${accepted.length} accepted machines ` +
     `(${accepted.map((entry) => entry.target).join(", ")}), ${checkers.length} digest ` +
-    `commands, ${checksums} downloaded by ${INSTALLER}:${verify.from} and written ` +
-    `by ${WORKFLOW}:${publish.from}, at ${commit.slice(0, 9)}`,
+    `commands and Get-FileHash -Algorithm ${windowsChecker[1]}, ${checksums} ` +
+    `downloaded by ${INSTALLER}:${verify.from} and ${WINDOWS}:${windowsVerify.from}, ` +
+    `written by ${WORKFLOW}:${publish.from}, at ${commit.slice(0, 9)}`,
 );

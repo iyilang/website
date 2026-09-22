@@ -6,9 +6,10 @@ import Stamped from "../components/Stamped.astro";
 import DurationChart from "../components/DurationChart.astro";
 import Sample from "../components/Sample.astro";
 import Quote from "../components/Quote.astro";
+import Platform from "../components/Platform.astro";
 import facts from "../generated/facts.json";
 import { tourSamples, runnable, playgroundHref } from "../playground/samples";
-import { latestRelease, releaseUrl, releaseAssets } from "../lib/release";
+import { latestRelease, releaseUrl, releaseAssets, windowsAsset } from "../lib/release";
 import platforms from "../generated/targets.json";
 import { SPELLED, sequence } from "../lib/lessons";
 import mascot from "../assets/mascot.png";
@@ -68,11 +69,14 @@ const lessons = await sequence();
 const spelled = SPELLED[lessons.length] ?? String(lessons.length);
 const lessonCount = `${spelled[0].toUpperCase()}${spelled.slice(1)}`;
 
-/* The machines a release ships a tarball for, in README.md's own words for
+/* The machines a release ships an archive for, in README.md's own words for
  * them, through scripts/install-targets.mjs. "Linux x86-64 or macOS arm64" was
  * typed into the install card, which made this page the third place that pair
- * was written down and the only one nothing checked. */
+ * was written down and the only one nothing checked. The Windows zip is read
+ * out of the installer that fetches it, which is a different script and a
+ * different archive, so it is named beside them rather than among them. */
 const machines = releaseAssets(release).map((asset) => asset.machine);
+const windows = windowsAsset(release);
 
 const starts = [
   {
@@ -89,7 +93,7 @@ const starts = [
   },
   {
     title: "Install it",
-    body: "One command installs the latest release into ~/.local on Linux or macOS, with both libraries and the samples. The second command runs hello.",
+    body: `One command installs the latest release, on ${machines.join(" and ")} and now ${windows.machine} too, with both libraries and the samples. The second command runs hello.`,
     href: "install/",
     cta: "Install iyi",
   },
@@ -251,12 +255,27 @@ const starts = [
       <div>
         <h2>Install in one line</h2>
         <p class="section-sub">
-          The latest release into <code>~/.local</code>, on {machines.join(" or ")},
-          with both libraries and the samples. Then hello.
+          The latest release into <code>~/.local</code> on{" "}
+          {machines.join(" or ")}, or into <code>%LOCALAPPDATA%</code> on{" "}
+          {windows.machine}, with both libraries and the samples. Then hello.
         </p>
         <p><a href={`${base}install/`}>What the installer does, and the by-hand version</a></p>
       </div>
-      <Quote id="install" as="shell" caption="install, then run hello" copy />
+      <Platform
+        id="home-install"
+        label="The machine you are installing on"
+        posix={machines.join(" / ")}
+        windows={windows.machine}
+      >
+        <Quote slot="posix" id="install" as="shell" caption="install, then run hello" copy />
+        <Quote
+          slot="windows"
+          id="install_windows"
+          as="shell"
+          caption="install on Windows, then run hello"
+          copy
+        />
+      </Platform>
     </div>
   </section>
 

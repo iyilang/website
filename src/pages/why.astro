@@ -7,6 +7,7 @@ import Quote from "../components/Quote.astro";
 import Compare from "../components/Compare.astro";
 import facts from "../generated/facts.json";
 import platforms from "../generated/targets.json";
+import proofs from "../generated/proofs.json";
 import { SPELLED } from "../lib/lessons";
 
 const base = import.meta.env.BASE_URL;
@@ -47,6 +48,17 @@ const ranHow = platforms.ran.map((t) => platforms.how[t as keyof typeof platform
  * carries no time or size unit. */
 const auditedCount = SPELLED[platforms.audited.length] ?? String(platforms.audited.length);
 const exempt = platforms.auditExempt;
+
+/* The jobs that execute on a Windows machine, out of scripts/proofs.mjs: a
+ * job's `runs-on` label is where its steps ran, which is the difference
+ * between a target that compiles and a target that was exercised. This
+ * paragraph said Windows compiled and linked and that what it printed could
+ * not be trusted; 0.14.0 is where that stopped being true, and it stops being
+ * true here by counting the jobs rather than by an editor noticing. */
+const onWindows = proofs.native.filter((job) => job.os === "windows");
+/* And which of them a tag waits for: "a Windows failure stops a release" is
+ * counted out of the workflow's own `needs` list, not asserted here. */
+const gatedOnWindows = onWindows.filter((job) => proofs.gate.needs.includes(job.id));
 
 /* The modules a rebuild did not read: the bench project's module count, less
  * the one whose line changed. The word was written into the sentence below as
@@ -346,8 +358,13 @@ const untouched = SPELLED[rest] ?? String(rest);
             <>{i === 0 ? "" : i === exempt.length - 1 ? " and " : ", "}<code>{t}</code></>
           ))
         }{" "}
-        are not. Windows compiles and links, and what it prints at run time
-        cannot be trusted yet.
+        are not. Windows is not in the {ranCount}, and is no longer only
+        compiled for either: {onWindows.length} jobs execute on a Windows
+        machine every build, and{" "}
+        {gatedOnWindows.length === onWindows.length ? "every one" : `${gatedOnWindows.length} of them`}{" "}
+        is on the list a tag waits for, so a failure there stops a release. The{" "}
+        <a href={`${base}targets/`}>platforms page</a> names them with their
+        lines.
       </p>
     </div>
   </section>
@@ -433,10 +450,11 @@ const untouched = SPELLED[rest] ?? String(rest);
         Young parts, named: iyi's own prelude carries the small-tool floor and
         no more, so it has no TLS and no serialization, and sockets and format
         strings live in <code>std/socket</code> and <code>std/format</code>,{" "}
-        outside the prelude every program carries; concurrency runs on Linux
-        and macOS arm64 only; dependencies resolve and pin, but there is no
-        registry and no artifact distribution yet, and <code>--crystal</code>{" "}
-        still leans on shards.
+        outside the prelude every program carries; concurrency runs on Linux,
+        macOS arm64 and Windows x86-64, and wasm32 gets no runtime at all
+        rather than a sequential imitation of one; dependencies resolve and
+        pin, but there is no registry and no artifact distribution yet, and{" "}
+        <code>--crystal</code> still leans on shards.
       </p>
     </div>
   </section>

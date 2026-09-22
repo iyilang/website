@@ -1,11 +1,16 @@
 ---
 /**
- * Downloads, and the verification the installer already does.
+ * Downloads, and the verification the installers already do.
  *
  * The artifacts come from src/lib/release.ts, which derives them from the
  * changelog: this page never spells a version or a file name. The passages
- * about verification are lifted by scripts/download.mjs out of install.sh and
- * the release workflow, with their line ranges.
+ * about verification are lifted by scripts/download.mjs out of install.sh,
+ * install.ps1 and the release workflow, with their line ranges.
+ *
+ * SINCE 0.14.0 there are two installers and two kinds of archive, and one
+ * SHA256SUMS over both. The zip is listed beside the tarballs, and the
+ * Windows script's own verification is quoted beside the shell script's,
+ * because half this page's readers run the other one.
  *
  * WHAT IS DELIBERATELY ABSENT. A digest and a byte size are facts about a
  * published artifact, which is on the network, and the build has no network.
@@ -16,13 +21,14 @@ import Page from "../layouts/Page.astro";
 import Measure from "../components/Measure.astro";
 import Lifted from "../components/Lifted.astro";
 import download from "../generated/download.json";
-import { latestRelease, releases, releaseAssets, releaseUrl } from "../lib/release";
+import { latestRelease, releases, releaseAssets, releaseUrl, windowsAsset } from "../lib/release";
 import { SPELLED } from "../lib/lessons";
 
 const base = import.meta.env.BASE_URL;
 
 const release = latestRelease();
 const assets = releaseAssets(release);
+const windows = windowsAsset(release);
 const history = releases();
 
 /* The command a reader runs by hand is the command the installer runs, with
@@ -31,6 +37,10 @@ const history = releases();
 const [preferred] = download.checkers;
 const digestCommand = (file: string) =>
   [preferred.tool, preferred.args, file].filter(Boolean).join(" ");
+
+/* And PowerShell's, which is one command in the shell rather than a
+ * preference order over two binaries. */
+const windowsDigest = `${download.windowsChecker.tool} -Algorithm ${download.windowsChecker.algorithm} ${windows.file}`;
 
 /* The machine each asset is for, as install.sh's own case arms name it: the
  * `uname` pair it accepts and the target it turns that into. */
@@ -41,15 +51,16 @@ const machineOf = (target: string) =>
 <Page
   kind="TechArticle"
   title="Download"
-  summary="Every iyi release, the tarball for each machine, and how the installer verifies one before it unpacks anything: it downloads the release's checksum file, refuses a tarball that does not match, and leaves nothing behind when it refuses."
+  summary="Every iyi release, the archive for each machine, and how the installers verify one before unpacking anything: they download the release's checksum file, refuse an archive that does not match, and leave nothing behind when they refuse."
 >
   <section class="wrap head">
     <p class="label">Download, <a href={releaseUrl(release)}>version {release.version}</a></p>
-    <h1>A tarball per machine, and a checksum the installer will not skip.</h1>
+    <h1>An archive per machine, and a checksum the installer will not skip.</h1>
     <p class="lede">
-      A release publishes one relocatable tarball per machine and one{" "}
-      <code>{download.checksums}</code> file beside them. The installer
-      downloads that file, compares it, and unpacks nothing when it does not
+      A release publishes one relocatable tarball per Unix machine, the{" "}
+      <code>{windows.target}</code> zip, and one{" "}
+      <code>{download.checksums}</code> file over all of them. Both installers
+      download that file, compare it, and unpack nothing when it does not
       match. Installing by hand, the same check is one command and one look.
     </p>
     <div class="hero-cta">
@@ -61,7 +72,7 @@ const machineOf = (target: string) =>
   <section class="wrap">
     <h2>The artifacts</h2>
     <p class="sub">
-      Named the way the installer names them, from the version the changelog
+      Named the way the installers name them, from the version the changelog
       states. Each row is what you download, the machine it is for, and the
       command that prints its digest.
     </p>
@@ -84,6 +95,17 @@ const machineOf = (target: string) =>
           </li>
         );
       })}
+      <li>
+        <div class="asset-head">
+          <span class="machine">{windows.machine}</span>
+          <span class="uname">a zip, through install.ps1</span>
+        </div>
+        <a class="url" href={windows.url}><code>{windows.file}</code></a>
+        <p class="verify">
+          <span class="label">verify</span>
+          <code>{windowsDigest}</code>
+        </p>
+      </li>
     </ul>
     <p class="sub">
       What that prints has to equal the line for the same file in{" "}
@@ -93,17 +115,19 @@ const machineOf = (target: string) =>
       exists to catch, and the site cannot read them at build time.
     </p>
     <p class="sub">
-      Where <code>{preferred.tool}</code> is missing, the installer falls back
+      Where <code>{preferred.tool}</code> is missing, install.sh falls back
       to{" "}
       {download.checkers.slice(1).map((checker) => (
         <code>{[checker.tool, checker.args].filter(Boolean).join(" ")}</code>
       ))}
-      , and refuses to continue when neither is there.
+      , and refuses to continue when neither is there. On Windows there is no
+      fallback to arrange: <code>{download.windowsChecker.tool}</code> is part
+      of the shell.
     </p>
   </section>
 
   <section class="wrap">
-    <h2>What the installer checks, in its own words</h2>
+    <h2>What the installers check, in their own words</h2>
     <p class="sub">
       The verification passage from install.sh. The final branch halts with an
       explicit error if a release published no checksum file.
@@ -113,15 +137,27 @@ const machineOf = (target: string) =>
       caption="install.sh, download and verify"
       cite={download.passages.verify.cite}
     />
+    <p class="sub">
+      And the same passage in the script a Windows reader runs. One{" "}
+      <code>{download.checksums}</code> covers every archive a release
+      publishes, so this is the same file and the same refusal, in the other
+      language. The two names are checked against each other, and against the
+      release job's, when this page is generated.
+    </p>
+    <Lifted
+      text={download.passages.windowsVerify.text}
+      caption="install.ps1, download and verify"
+      cite={download.passages.windowsVerify.cite}
+    />
     <div class="cols">
       <div>
         <h3>The file it looks for is the file CI writes</h3>
         <p class="sub">
-          The release job computes the digests over the tarballs it is about to
-          attach, and attaches them too. The installer's name for that file and
-          the job's name for it are checked against each other when this page
-          is generated: if they ever differ, the site fails to build rather
-          than telling you a tarball was verified.
+          The release job computes the digests over the archives it is about to
+          attach, and attaches them too. Each installer's name for that file
+          and the job's name for it are checked against each other when this
+          page is generated: if they ever differ, the site fails to build
+          rather than telling you an archive was verified.
         </p>
         <Lifted
           text={download.passages.publish.text}
@@ -130,17 +166,22 @@ const machineOf = (target: string) =>
         />
       </div>
       <div>
-        <h3>And the refusal is tested</h3>
+        <h3>And both refusals are tested</h3>
         <p class="sub">
           Before any of that ships, CI corrupts one digit of the published
           checksum file, runs the installer against it, and requires three
           things: that it fails, that it fails with its own sentence, and that
-          no binary is left behind.
+          no binary is left behind. The Windows job does it to the zip.
         </p>
         <Lifted
           text={download.passages.tamper.text}
-          caption="the gate over the installer"
+          caption="the gate over install.sh"
           cite={download.passages.tamper.cite}
+        />
+        <Lifted
+          text={download.passages.windowsTamper.text}
+          caption="the gate over install.ps1"
+          cite={download.passages.windowsTamper.cite}
         />
       </div>
     </div>
@@ -149,8 +190,9 @@ const machineOf = (target: string) =>
   <section class="wrap">
     <h2>Machines it refuses</h2>
     <p class="sub">
-      Releases ship {download.accepted.map((entry) => entry.target).join(" and ")}.
-      Anything else gets this refusal and a pointer to building from source:
+      install.sh ships {download.accepted.map((entry) => entry.target).join(" and ")}{" "}
+      and install.ps1 ships <code>{windows.target}</code>. Anything else gets
+      this refusal and a pointer to building from source:
     </p>
     <p class="refusal"><code>{download.refused}</code></p>
     <Lifted
@@ -161,7 +203,7 @@ const machineOf = (target: string) =>
     <p class="sub">
       Other platforms build from source. The compiler cross-compiles for{" "}
       <a href={`${base}targets/`}><Measure of="targets" /> targets</a>; these
-      are the ones a release job produces a tarball for.
+      are the ones a release job produces an archive for.
     </p>
   </section>
 

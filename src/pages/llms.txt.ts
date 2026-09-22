@@ -13,8 +13,10 @@ import { getCollection } from "astro:content";
 import { tourSections, wasmProvenance } from "../playground/samples";
 import { latestRelease } from "../lib/release";
 import platforms from "../generated/targets.json";
+import proofs from "../generated/proofs.json";
 import { SPELLED } from "../lib/lessons";
 import agent from "../../records/agent.json";
+import readme from "../generated/readme.json";
 
 export const GET: APIRoute = async ({ site }) => {
   const origin = (site ?? new URL("https://iyi.dev")).href.replace(/\/$/, "");
@@ -34,6 +36,21 @@ export const GET: APIRoute = async ({ site }) => {
    * count here is worse than one on a page. */
   const ranCount = SPELLED[platforms.ran.length];
   const ranHow = platforms.ran.map((t) => platforms.how[t as keyof typeof platforms.how]);
+
+  /* The jobs that execute on a Windows machine, out of scripts/proofs.mjs and
+   * the workflow's own `runs-on` labels. */
+  const onWindows = proofs.native.filter((job) => job.os === "windows").length;
+
+  /* The two install commands, quoted out of README.md through
+   * scripts/samples.mjs rather than typed here: this file used to carry the
+   * POSIX one-liner as text, which was the one copy of it on the site nothing
+   * checked, and it said nothing at all about Windows once 0.14.0 published a
+   * zip. Indented four spaces, which is how this file sets a command. */
+  const installPosix = readme.install.text.split("\n").map((line) => `    ${line}`).join("\n");
+  const installWindows = readme.install_windows.text
+    .split("\n")
+    .map((line) => `    ${line}`)
+    .join("\n");
 
   /* The loop's verbs and what each one answered with, out of the recording
    * rather than out of a sentence about it. An agent reading this file gets
@@ -87,18 +104,24 @@ ${loopFrames}
   ${agent.recorded.command} compares them on every recording and refuses to write
   the record when they differ.
 - Portability: compiles for ${s.targets} targets and is run on ${ranCount} every
-  build (${ranHow.join(", ")}).
+  build (${ranHow.join(", ")}). ${onWindows} CI jobs execute on a Windows machine,
+  and since ${release.version} a release publishes a Windows zip beside the two tarballs.
 - Performance and efficiency: native code through LLVM; a hello world is
   ${bin.iyi.kb} KB and starts in ${bin.iyi.ms} ms, against ${bin.crystal.kb.toLocaleString("en-GB")} KB and ${bin.crystal.ms} ms with Crystal's
   library (\`${bin.command}\` on ${bin.machine}).
 
 ## Install
 
-    curl -fsSL https://raw.githubusercontent.com/iyilang/iyi/master/install.sh | sh
-    ~/.local/bin/iyi run ~/.local/share/iyi/samples/hello.iyi
+${installPosix}
 
 The latest release into ~/.local, on Linux x86-64 or macOS arm64, with both
-libraries and the samples. Details: ${origin}/install/
+libraries and the samples. On Windows, PowerShell installs the same release
+from the zip into %LOCALAPPDATA%\\Programs\\iyi:
+
+${installWindows}
+
+That machine also needs the Visual C++ build tools, because an iyi program is
+linked by cl.exe. Details: ${origin}/install/
 
 ## Crystal compatibility
 
