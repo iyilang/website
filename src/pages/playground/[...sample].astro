@@ -67,7 +67,6 @@ interface Props {
 }
 
 const { sample } = Astro.props as Props;
-const base = import.meta.env.BASE_URL.replace(/\/*$/, "/");
 const runs = "wasm" in sample;
 
 /* The slice for this sample. Missing is fatal rather than silently absent: a
@@ -95,24 +94,4 @@ if (entry === undefined) {
 >
   <Playground sample={sample} entry={entry} />
 
-  <section class="wrap honest">
-    <p>
-      {
-        runs
-          ? "This page runs the module the compiler built from the listing above. You can type in the pane: nothing here compiles, so what you type cannot run, and the page says which bytes it is running the moment the text stops being the recorded file. There is no standard input, no filesystem and no threads on this target, and one sample fails on purpose for exactly that reason."
-          : "This program does not compile for the browser's target, so this page shows what it printed when the compiler ran it natively, on the machine named above. You can still type in the pane, and the page will say when what is in it is no longer the file the recording is about."
-      }{" "}
-      <a href={`${base}playground/evidence/`}>The recordings behind this</a>{" "}
-      say which bytes ran and what checked them.
-    </p>
-  </section>
 </Page>
-
-<style>
-  .honest p {
-    max-width: var(--measure);
-    color: var(--graphite);
-    font-size: var(--step--1);
-    margin: 0;
-  }
-</style>

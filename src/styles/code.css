@@ -5,17 +5,18 @@
  * The highlighting theory: emphasise exactly the tokens that are iyi's and not
  * Crystal's. `module`, `import`, `pub`, `trait`, `impl`, `forall`, `derive`,
  * `type` are the whole delta, and they are what a reader is here to
- * see. Everything else is ink. There is no rainbow, because a rainbow would
- * spend attention on syntax that is not the argument.
+ * see. Three hues and no more: keywords in the accent, strings in the green,
+ * comments receding. Everything else is ink.
  */
 
 .source {
   font-family: var(--font-mono);
-  font-size: var(--step--1);
-  line-height: 1.58;
-  background: var(--raise);
+  font-size: 13px;
+  line-height: 1.7;
+  background: var(--code);
   border: var(--hair) solid var(--hairline);
-  border-radius: 2px;
+  border-radius: 14px;
+  overflow: hidden;
   margin: 0;
   tab-size: 2;
 }
@@ -30,7 +31,7 @@
 
 .source pre {
   margin: 0;
-  padding: 0.95rem 1.1rem;
+  padding: 16px 18px;
   overflow: visible;
 }
 
@@ -49,16 +50,17 @@
   align-items: baseline;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 0.3rem 1rem;
-  padding: 0.45rem 1.1rem;
+  align-items: center;
+  gap: 0.3rem 12px;
+  padding: 10px 12px 10px 16px;
   border-bottom: var(--hair) solid var(--hairline);
   font-family: var(--font-mono);
-  font-size: var(--step--2);
+  font-size: 12px;
   color: var(--mute);
 }
 
 .source-head .path {
-  color: var(--graphite);
+  color: var(--mute);
 }
 
 /* Tokens ----------------------------------------------------------------- */
@@ -79,10 +81,9 @@
  *      primitive literal         c  a comment
  *   i  the delimiters of a string interpolation
  *
- * Weight only, and no hue anywhere in here. It survives printing and colour
- * blindness, and more importantly it keeps the signal colour free for the one
- * thing the signal colour means on this site, which is a loss or a caveat.
- * Syntax is never a loss. */
+ * Keywords take the accent and strings the green, and the nine rules below
+ * keep their extra weight on top of that, so the delta still reads in a
+ * printout or to a reader who cannot tell the two hues apart. */
 
 /* THE ONE EMPHASIS THAT MATTERS. `module`, `import`, `pub`, `trait`, `impl`,
  * `forall`, `derive`, `type` and `abstract` are the entire delta
@@ -111,13 +112,13 @@
 .tok-rule,
 .k.tok-rule {
   font-weight: 600;
-  color: var(--ink);
+  color: var(--brand-deep);
 }
 
 /* An ordinary Crystal keyword. Present, and quieter than the nine above. */
 .k {
   font-weight: 500;
-  color: var(--ink);
+  color: var(--brand-deep);
 }
 
 /* A constant or a type name. Ink, unweighted: a type is structure, and in iyi
@@ -133,10 +134,12 @@
   color: var(--ink);
 }
 
-/* Literals recede. A string, a character, a number, a symbol, `nil`, `true`
- * and `false` are the least interesting thing in a listing about a type
- * system, and graphite puts them behind the structure without hiding them. */
-.s,
+/* A string or a character is the green; a number, a symbol, `nil`, `true`
+ * and `false` recede to graphite behind the structure. */
+.s {
+  color: var(--ok);
+}
+
 .n {
   color: var(--graphite);
 }
@@ -155,13 +158,10 @@
   color: var(--mute);
 }
 
-/* A comment. Mute italic, and the mono's true italic is the reason IBM Plex
- * Mono was chosen over the ligature monos: prose inside code should read as
- * prose. Comments in samples/iyi/ carry the rule citations, so they are
- * quiet but never illegible. */
+/* A comment. Mute and upright. Comments in samples/iyi/ carry the rule
+ * citations, so they are quiet but never illegible. */
 .c {
   color: var(--mute);
-  font-style: italic;
 }
 
 /* Declaration face ------------------------------------------------------- */
@@ -177,13 +177,11 @@
   gap: 0.45rem;
   font-family: var(--font-mono);
   font-size: var(--step--2);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
   color: var(--graphite);
-  background: none;
+  background: var(--card);
   border: var(--hair) solid var(--boundary);
-  border-radius: 2px;
-  padding: 0.2rem 0.5rem;
+  border-radius: 7px;
+  padding: 4px 10px;
   cursor: pointer;
 }
 
@@ -214,43 +212,41 @@
 
 /* Console ---------------------------------------------------------------- */
 
-/* A console block is a recording of a real run, so it gets the terminal frame
- * the README's own chart uses, and nothing else on the site does. Output is
- * never syntax highlighted, because nothing highlighted it in the terminal. */
+/* A console block is a recording of a real run. It is a code block on the
+ * raised ground, with a caption bar naming what ran. Output is never syntax
+ * highlighted, because nothing highlighted it in the terminal. */
 .console {
   font-family: var(--font-mono);
-  font-size: var(--step--1);
-  line-height: 1.6;
+  font-size: 13px;
+  line-height: 1.7;
   background: var(--raise);
   border: var(--hair) solid var(--hairline);
-  border-radius: 6px;
+  border-radius: 14px;
   overflow: hidden;
 }
 
 .console-chrome {
   display: flex;
-  gap: 0.45rem;
+  gap: 12px;
   align-items: center;
-  padding: 0.55rem 0.8rem;
+  padding: 10px 12px 10px 16px;
   border-bottom: var(--hair) solid var(--hairline);
+  font-size: 12px;
+  color: var(--mute);
 }
 
 .console-chrome i {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--hairline);
+  display: none;
 }
 
 .console-chrome .caption {
-  margin-inline-start: 0.5rem;
-  font-size: var(--step--2);
+  font-size: 12px;
   color: var(--mute);
 }
 
 .console pre {
   margin: 0;
-  padding: 0.9rem 1.1rem;
+  padding: 16px 18px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -266,7 +262,7 @@
 }
 
 .console .out {
-  color: var(--graphite);
+  color: var(--ink);
 }
 
 /* Diagnostics ------------------------------------------------------------ */
@@ -276,13 +272,13 @@
  * exactly as the compiler prints it. */
 .diagnostic {
   font-family: var(--font-mono);
-  font-size: var(--step--1);
-  line-height: 1.55;
-  background: var(--raise);
+  font-size: 13px;
+  line-height: 1.7;
+  background: var(--code);
   border: var(--hair) solid var(--hairline);
-  border-left: 2px solid var(--signal);
-  border-radius: 0 2px 2px 0;
-  padding: 0.9rem 1.1rem;
+  box-shadow: inset 2px 0 0 var(--brand);
+  border-radius: 14px;
+  padding: 16px 18px;
   overflow-x: auto;
 }
 

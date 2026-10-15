@@ -32,14 +32,14 @@ if (value === undefined || value === null) {
 const shown = typeof value === "number" ? value.toLocaleString("en-GB") : value;
 ---
 
-<span class="structural mono">{shown}{unit ? ` ${unit}` : ""}</span>
+<span class="structural">{shown}{unit ? ` ${unit}` : ""}</span>
 
 <style>
   /* Flat. No border, no tick edge, no stamp. The absence is the signal: this
    * number is the same on your machine as on mine. */
   .structural {
-    font-weight: 600;
-    color: var(--ink);
+    font: inherit;
+    color: inherit;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }

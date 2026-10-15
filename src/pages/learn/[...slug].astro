@@ -46,7 +46,6 @@ import {
   breakCases,
   inlineMarkdown,
   lessonHref,
-  SPELLED,
   type Lesson,
 } from "../../lib/lessons";
 
@@ -74,35 +73,27 @@ interface Props {
 const { lesson, previous, next, total } = Astro.props;
 const { Content, headings } = await render(lesson);
 
+/* The step's own sections, read off the rendered entry, so a contents entry
+ * and the heading it names cannot disagree. */
+const sections = headings.filter((heading) => heading.depth === 2 || heading.depth === 3);
+
 const base = import.meta.env.BASE_URL;
 const rules = rulesOf(lesson);
 const run = runOf(lesson);
 const sources = lesson.data.sources ?? [];
 const indexHref = `${base.replace(/\/$/, "")}/learn/`;
-const spelled = SPELLED[total] ?? String(total);
-
-// The step's position in the path, drawn as ticks rather than written twice.
-// Structural: it is the `order` in the file, so it is the same on every
-// machine, and it is not a claim about what the reader has read.
-const ticks = Array.from({ length: total }, (_, i) => i + 1);
-
-// The lesson's own sections, read off the rendered entry rather than repeated
-// in frontmatter. The ids are the ones Astro's markdown pipeline slugged and
-// the ones `_Heading.astro` links to, so a contents entry and the heading it
-// names cannot disagree. `##` and `###` only: `#` is the lesson's title, which
-// the page already sets, and anything deeper is not a place a reader navigates
-// to. No count of them and no estimate of anything: doc/ART-DIRECTION.md
-// forbids a time estimate in copy, and a list of sections is a map, not a
-// promise about how long the walk takes.
-const sections = headings.filter(
-  (heading) => heading.depth === 2 || heading.depth === 3,
-);
 
 // Every recorded rejection this step shows. The first is the one the lesson's
 // closing paragraph leads into and the one that carries the extra files the
 // rejection needs to make sense; the rest are further cases recorded under the
 // same rule, shown after it rather than left in the record unrendered.
 const broken = breakCases(lesson);
+
+/* Every step, with the rules it teaches, for the path across the top. */
+const steps = (await sequence()).map((step) => ({
+  lesson: step,
+  rules: rulesOf(step).map((rule) => rule.id).join(" "),
+}));
 ---
 
 <Page
@@ -110,484 +101,400 @@ const broken = breakCases(lesson);
   title={`${lesson.data.title}, learn iyi`}
   summary={lesson.data.summary.replace(/`/g, "")}
 >
-  <article class="spread lesson">
-    <div class="head">
-      <p class="label">
-        <a href={indexHref}>Learn</a>, step {lesson.data.order} of {total}
-      </p>
-      <ol class="ticks" aria-hidden="true">
+  <div class="wrap">
+    <article class="lesson">
+      <nav class="path" aria-label="Steps">
         {
-          ticks.map((n) => (
-            <li class:list={["tick", { done: n < lesson.data.order, here: n === lesson.data.order }]} />
+          steps.map((step) => (
+            <a
+              href={lessonHref(base, step.lesson)}
+              aria-current={step.lesson.id === lesson.id ? "page" : undefined}
+            >
+              <span>{step.lesson.data.order}</span>
+              {step.rules}
+            </a>
           ))
         }
-      </ol>
-      <h1>{lesson.data.title}</h1>
-      <p class="lede" set:html={inlineMarkdown(lesson.data.summary)} />
-    </div>
+      </nav>
 
-    {
-      /* In this step, in the rail. The sections are the lesson's own `##` and
-       * `###`, so this is a map of the page rather than a second outline
-       * somebody has to keep in step with it, and every entry links to the id
-       * the heading carries. Beside the opening rather than floating: a reader
-       * decides here whether to read the step or jump to the part they came
-       * for. */
-      sections.length > 0 && (
-        <nav class="toc to-rail" aria-label="In this step">
-          <p class="label">in this step</p>
-          <ol>
-            {sections.map((heading) => (
-              <li class:list={["toc-item", { deep: heading.depth === 3 }]}>
-                <a href={`#${heading.slug}`}>{heading.text}</a>
-              </li>
-            ))}
-          </ol>
-        </nav>
-      )
-    }
-
-    <section class="says to-wide">
-      <p class="label">What the rule says</p>
-      {
-        rules.map((rule) => (
-          <blockquote class="premise">
-            <p set:html={inlineMarkdown(rule.premise)} />
-            <cite>
-              <span class="premise-id">{rule.id}</span> {rule.cite}
-            </cite>
-          </blockquote>
-        ))
-      }
-    </section>
-
-    <section class="runs to-wide">
-      <p class="label">Run it</p>
-      <p class="runs-line">
-        This step is grounded in <span class="runs-path">{run.path}</span>,{" "}
-        {run.lines} lines in the repository, read out of the tree when this
-        page is built.
-      </p>
-      <p class="runs-line">
+      <header class="lesson-head">
+        <p class="small">
+          <a href={indexHref}>Learn</a> · step {lesson.data.order} of {total}
+        </p>
+        <h1 class="h1">{lesson.data.title}</h1>
+        <p class="lead" set:html={inlineMarkdown(lesson.data.summary)} />
         {
-          run.href ? (
-            <Fragment>
-              <a class="runs-link" href={run.href}>Run it in your browser</a>
-              <span class="runs-none">
-                {" "}from the module the compiler built for it.
-              </span>
-            </Fragment>
-          ) : (
-            <span class="runs-none">
-              This program does not run in the browser. Locally it is{" "}
-              <code>iyi run {run.path}</code>.
-            </span>
+          sections.length > 0 && (
+            <nav class="toc" aria-label="In this step">
+              <span class="small">In this step</span>
+              {sections.map((heading) => (
+                <a href={`#${heading.slug}`} class:list={{ deep: heading.depth === 3 }}>
+                  {heading.text}
+                </a>
+              ))}
+            </nav>
           )
         }
-      </p>
-      {run.note && <p class="runs-note">{run.note}</p>}
-    </section>
+      </header>
 
-    <hr class="rule to-wide" />
+      <div class="lesson-body">
+        <p class="eyebrow">What the rule says</p>
+        {
+          rules.map((rule) => (
+            <blockquote class="premise">
+              <span class="chip chip--red">{rule.id}</span>{" "}
+              <span set:html={inlineMarkdown(rule.premise)} />
+              <cite>
+                <span>{rule.id}</span> {rule.cite}
+              </cite>
+            </blockquote>
+          ))
+        }
 
-    <div class="prose">
-      {/* The headings carry a link to themselves, which is the one thing the
-        * markdown pipeline does not render: it slugs every heading and nothing
-        * emits an anchor for the slug. Mapped rather than written into each
-        * lesson, so a new lesson gets it by existing. */}
-      <Content components={{ h2: H2, h3: H3 }} />
-    </div>
-
-    {
-      broken.map((entry, i) => (
-        <BreakRule
-          id={entry.id}
-          also={i === 0 ? lesson.data.breaksAlso : undefined}
-        />
-      ))
-    }
-
-    <section class="bought to-wide">
-      <hr class="rule" />
-      <p class="label">What the rule bought</p>
-      <p class="bought-body" set:html={inlineMarkdown(lesson.data.bought)} />
-    </section>
-
-    {
-      /* Provenance at the foot rather than in the rail beside the opening. The
-       * listings and the quoted recordings already print their own file and
-       * lines where they sit, so this is the shorter list of what the prose
-       * leans on without showing, and a lesson's opening is not improved by a
-       * column of citations running past it. */
-      sources.length > 0 && (
-        <footer class="standing to-wide">
-          <hr class="rule" />
-          <p class="label">Standing on</p>
-          <dl class="sources">
-            {sources.map((source) => (
-              <div class="source-entry">
-                <dt>{source.file}</dt>
-                <dd set:html={inlineMarkdown(source.note)} />
-              </div>
-            ))}
-          </dl>
-        </footer>
-      )
-    }
-
-    <nav class="onward to-wide" aria-label="Sequence">
-      <hr class="rule" />
-      <div class="onward-grid">
-        <div class="back">
+        <p class="eyebrow">Run it</p>
+        <p class="lp">
+          This step is grounded in <code>{run.path}</code>, {run.lines} lines in
+          the repository, read out of the tree when this page is built.
+        </p>
+        <p class="lp">
           {
-            previous ? (
-              <a href={lessonHref(base, previous)}>
-                <span class="label">Back to step {previous.data.order}</span>
-                <span class="onward-title">{previous.data.title}</span>
-              </a>
+            run.href ? (
+              <Fragment>
+                <a href={run.href}>Run it in your browser</a>
+                <span> from the module the compiler built for it.</span>
+              </Fragment>
             ) : (
-              <a href={indexHref}>
-                <span class="label">The sequence</span>
-                <span class="onward-title">All {spelled} steps</span>
-              </a>
+              <span>
+                This program does not run in the browser. Locally it is{" "}
+                <code>iyi run {run.path}</code>.
+              </span>
             )
           }
+        </p>
+        {run.note && <p class="lp note">{run.note}</p>}
+
+        <div class="prose">
+          {/* The headings carry a link to themselves, which is the one thing
+            * the markdown pipeline does not render. Mapped rather than written
+            * into each lesson, so a new lesson gets it by existing. */}
+          <Content components={{ h2: H2, h3: H3 }} />
         </div>
-        <div class="forward">
-          {
-            next ? (
-              <a href={lessonHref(base, next)}>
-                <span class="label">Next, step {next.data.order} of {total}</span>
-                <span class="onward-title">{next.data.title}</span>
-                <span
-                  class="onward-summary"
-                  set:html={inlineMarkdown(next.data.summary)}
-                />
-              </a>
-            ) : (
-              <a href={indexHref}>
-                <span class="label">That was the last step</span>
-                <span class="onward-title">Back to the sequence</span>
-              </a>
-            )
-          }
-        </div>
+
+        {
+          broken.map((entry, i) => (
+            <BreakRule id={entry.id} also={i === 0 ? lesson.data.breaksAlso : undefined} />
+          ))
+        }
+
+        <p class="eyebrow">What the rule bought</p>
+        <p class="lp" set:html={inlineMarkdown(lesson.data.bought)} />
+
+        {
+          /* Provenance at the foot. The listings and the quoted recordings
+           * already print their own file and lines where they sit, so this is
+           * the shorter list of what the prose leans on without showing. */
+          sources.length > 0 && (
+            <Fragment>
+              <p class="eyebrow">Standing on</p>
+              <dl class="sources">
+                {sources.map((source) => (
+                  <div>
+                    <dt><code>{source.file}</code></dt>
+                    <dd set:html={inlineMarkdown(source.note)} />
+                  </div>
+                ))}
+              </dl>
+            </Fragment>
+          )
+        }
       </div>
-    </nav>
-  </article>
+
+      <nav class="pager" aria-label="Sequence">
+        {
+          previous ? (
+            <a class="button button--ghost" href={lessonHref(base, previous)}>
+              ← {previous.data.order}. {previous.data.title}
+            </a>
+          ) : (
+            <a class="button button--ghost" href={indexHref}>← All steps</a>
+          )
+        }
+        {
+          next ? (
+            <a class="button" href={lessonHref(base, next)}>
+              {next.data.order}. {next.data.title} →
+            </a>
+          ) : (
+            <a class="button" href={`${base.replace(/\/$/, "")}/playground/`}>The syntax tour →</a>
+          )
+        }
+      </nav>
+    </article>
+  </div>
 </Page>
 
 <style>
-  .head {
-    padding-block: 3.2rem 0.4rem;
+  .lesson {
+    max-width: 820px;
+    padding-top: clamp(32px, 5vw, 56px);
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
   }
 
-  .head h1 {
-    margin-block: 0.5rem 1rem;
+  .path {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
   }
 
-  .head .label a {
-    color: inherit;
-  }
-
-  .lede {
-    font-size: var(--step-1);
-    line-height: var(--lead-snug);
-    color: var(--graphite);
-    max-width: 58ch;
-    margin-block-end: 0;
-  }
-
-  /* The step's sections, in the rail beside its opening. Aligned to the lede
-   * rather than to the top of the head, because the head carries the step
-   * number, the ticks and the title, and a contents list level with the title
-   * reads as part of it. */
-  .toc {
-    padding-block-start: 4.6rem;
-  }
-
-  .toc .label {
-    margin-block-end: 0.7rem;
-  }
-
-  .toc ol {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+  .path a {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 9px;
+    border: var(--hair) solid var(--hairline);
+    background: var(--card);
     font-family: var(--font-mono);
-    font-size: var(--step--2);
-    line-height: 1.5;
+    font-size: 12.5px;
+    color: var(--ink);
+    text-decoration: none;
   }
 
-  .toc-item + .toc-item {
-    margin-block-start: 0.55rem;
+  .path a:hover {
+    border-color: var(--mute);
+    color: var(--ink);
   }
 
-  .toc-item.deep {
-    padding-inline-start: 1rem;
+  .path a span {
+    color: var(--mute);
+  }
+
+  .path a[aria-current="page"] {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+  }
+
+  .lesson-head {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .lesson-head .small {
+    margin: 0;
+  }
+
+  .lesson-head .small a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .toc {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 14px;
+    padding-top: 4px;
+  }
+
+  .toc .small {
+    margin-right: 2px;
   }
 
   .toc a {
+    font-size: 14px;
     color: var(--graphite);
     text-decoration: none;
-    border-bottom: var(--hair) solid transparent;
+    border-bottom: var(--hair) solid var(--boundary);
   }
 
-  .toc a:hover,
-  .toc a:focus-visible {
+  .toc a:hover {
     color: var(--ink);
-    border-bottom-color: var(--signal);
   }
 
-  @media (max-width: 62rem) {
-    /* One column now, so the rail is under the opening: it becomes a plain
-     * list of what follows and the alignment padding would only be a gap. */
-    .toc {
-      padding-block-start: 1.8rem;
-    }
+  .toc a.deep {
+    color: var(--mute);
   }
 
-  /* Where this step sits in the path, drawn as instrument ticks. The filled
-   * ticks are the steps before this one, which is the `order` in the file and
-   * not a guess about what the reader has read. */
-  .ticks {
+  .lesson-body {
     display: flex;
-    gap: 0.32rem;
-    list-style: none;
-    margin: 0.7rem 0 0;
-    padding: 0;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
   }
 
-  .tick {
-    width: 1.6rem;
-    height: var(--hair);
-    background: var(--track);
+  /* Every label a lesson carries, its own and the ones BreakRule prints, is
+   * the redesign's eyebrow: sentence case, the accent, and room above it. */
+  .lesson-body .eyebrow,
+  .lesson-body :global(.label) {
+    margin: 28px 0 0;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--brand-deep);
   }
 
-  .tick.done {
-    background: var(--hairline);
-  }
-
-  .tick.here {
-    height: 3px;
-    background: var(--ink);
-  }
-
-  /* What the rule says. The specification's own sentence, so it is set as a
-   * quotation with its line cited, and it is the first thing under the lede
-   * because a step that cannot state its rule is not teaching one. */
-  .says {
-    margin-block-start: 3.2rem;
-  }
-
-  .says .label {
-    margin-block-end: 0.9rem;
+  .lesson-body :global(hr.rule) {
+    display: none;
   }
 
   .premise {
     margin: 0;
-    padding-inline-start: 1.1rem;
-    border-inline-start: 2px solid var(--hairline);
-    max-width: var(--measure);
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: var(--raise);
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--ink);
   }
 
-  .premise + .premise {
-    margin-block-start: 1.2rem;
-  }
-
-  .premise p {
-    font-size: var(--step-1);
-    line-height: var(--lead-snug);
-    margin: 0;
+  .premise .chip {
+    margin-right: 6px;
   }
 
   .premise cite {
     display: block;
-    margin-block-start: 0.5rem;
-    font-family: var(--font-mono);
-    font-size: var(--step--2);
+    margin-top: 8px;
     font-style: normal;
+    font-family: var(--font-mono);
+    font-size: 12px;
     color: var(--mute);
   }
 
-  .premise-id {
+  .premise cite span {
     color: var(--ink);
     font-weight: 600;
-    margin-inline-end: 0.55rem;
   }
 
-  /* The program the step is grounded in, and where it can be run. */
-  .runs {
-    margin-block-start: 3rem;
-  }
-
-  .runs .label {
-    margin-block-end: 0.9rem;
-  }
-
-  .runs-line {
+  .lp,
+  .prose :global(p),
+  .prose :global(li) {
     margin: 0;
-    max-width: var(--measure);
+    font-size: 16.5px;
+    line-height: 1.7;
+    color: var(--ink);
+    opacity: 0.92;
+    max-width: none;
   }
 
-  .runs-line + .runs-line {
-    margin-block-start: 0.8rem;
+  .lp :global(code),
+  .prose :global(p code),
+  .prose :global(li code) {
+    font-size: 0.88em;
   }
 
-  .runs-path {
-    font-family: var(--font-mono);
-    font-size: var(--step--1);
-  }
-
-  .runs-link {
-    text-decoration: none;
-    border-bottom: 2px solid var(--signal);
-    padding-block-end: 2px;
-  }
-
-  .runs-none {
+  .note {
+    font-size: 15px;
     color: var(--graphite);
   }
 
-  .runs-note {
-    margin-block: 0.7rem 0;
-    max-width: var(--measure);
-    color: var(--graphite);
-    font-size: var(--step--1);
+  /* The lesson's own prose: one column, the same rhythm as the blocks around
+   * it, and its headings at the size the redesign sets them. */
+  .prose {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
   }
 
-  /* What the rule bought. The step's closing claim, set in the measure rather
-   * than in a frame: it is an argument, not a measurement. */
-  .bought .label {
-    margin-block: 1.3rem 0.8rem;
-  }
-
-  .bought-body {
+  .prose > :global(*) {
     margin: 0;
-    max-width: var(--measure);
-    font-size: var(--step-1);
-    line-height: var(--lead-snug);
   }
 
-  .lesson > .rule {
-    margin-block: 2.4rem 2.4rem;
+  .prose :global(h2),
+  .prose :global(h3) {
+    margin-top: 20px;
+    font-size: 24px;
+    font-weight: 650;
+    font-stretch: normal;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
   }
 
-  /* The sources note. Mono, because it names files, and laid out across the
-   * measure so a lesson's opening is not shadowed by a column of citations. */
-  .standing {
-    margin-block-start: 3.2rem;
+  .prose :global(h3) {
+    font-size: 20px;
   }
 
-  .standing .label {
-    margin-block: 1.2rem 0.9rem;
+  .prose :global(ul),
+  .prose :global(ol) {
+    padding-inline-start: 1.3em;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .lesson-body :global(.source pre),
+  .lesson-body :global(.console pre) {
+    font-size: 12.5px;
+  }
+
+  .lesson-body :global(.break) {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .lesson-body :global(.break-title) {
+    margin: 20px 0 0;
+    font-size: 24px;
+    font-weight: 650;
+    font-stretch: normal;
+  }
+
+  .lesson-body :global(.break .source),
+  .lesson-body :global(.break .diagnostic) {
+    margin: 0;
   }
 
   .sources {
-    display: grid;
-    /* The floor is the longest path a lesson cites plus room to breathe.
-     * `samples/iyi/app/greeter.iyi` is 27 characters, and a column narrower
-     * than that breaks a file path mid-token, which makes it unreadable as a
-     * path. Measured against the rendered text rather than guessed. */
-    grid-template-columns: repeat(auto-fit, minmax(min(32ch, 100%), 1fr));
-    gap: 1.1rem var(--gutter);
     margin: 0;
-    font-family: var(--font-mono);
-    font-size: var(--step--2);
-    line-height: 1.5;
+    display: flex;
+    flex-direction: column;
+    border-top: var(--hair) solid var(--hairline);
   }
 
-  .source-entry {
-    border-left: var(--hair) solid var(--hairline);
-    padding-inline-start: 0.7rem;
+  .sources div {
+    display: grid;
+    grid-template-columns: minmax(140px, 220px) minmax(0, 1fr);
+    gap: 6px 20px;
+    padding: 12px 0;
+    border-bottom: var(--hair) solid var(--hairline);
+    font-size: 14.5px;
+    line-height: 1.55;
   }
 
-  .sources dt {
-    color: var(--ink);
-    font-weight: 600;
-    /* A safety valve only. The column floor above is set so this never fires
-     * for any path in the tree. */
+  .sources dt code {
+    white-space: normal;
     overflow-wrap: anywhere;
   }
 
   .sources dd {
-    margin: 0.2rem 0 0;
+    margin: 0;
     color: var(--graphite);
   }
 
-  /* Spacing for the site's own code components where they sit in a lesson's
-   * flow. Markdown elements are the global `.prose` class's business, not this
-   * page's, so nothing below touches one. */
-  .prose :global(.source),
-  .prose :global(.console),
-  .prose :global(.diagnostic) {
-    margin-block: 1.5rem;
-  }
-
-  .onward {
-    margin-block-start: 3.4rem;
-  }
-
-  .onward-grid {
-    display: grid;
-    grid-template-columns: minmax(0, auto) minmax(0, 1fr);
-    gap: var(--gutter);
-    align-items: start;
-    padding-block-start: 1.3rem;
-  }
-
-  .onward a {
-    text-decoration: none;
-    display: block;
-  }
-
-  .onward .label {
-    display: block;
-    margin-block-end: 0.2rem;
-  }
-
-  .onward-title {
-    display: block;
-    font-size: var(--step-1);
-    line-height: var(--lead-snug);
-  }
-
-  .onward a:hover .onward-title {
-    text-decoration: underline;
-    text-decoration-color: var(--signal);
-    text-decoration-thickness: 2px;
-    text-underline-offset: 0.18em;
-  }
-
-  .onward-summary {
-    display: block;
-    margin-block-start: 0.4rem;
-    color: var(--graphite);
-    font-size: var(--step--1);
-    max-width: 46ch;
-  }
-
-  .forward {
-    text-align: right;
-    justify-self: end;
-  }
-
-  .forward .onward-summary {
-    margin-inline-start: auto;
-  }
-
-  @media (max-width: 42rem) {
-    .onward-grid {
+  @media (max-width: 599px) {
+    .sources div {
       grid-template-columns: minmax(0, 1fr);
     }
+  }
 
-    .forward {
-      text-align: left;
-      justify-self: start;
-    }
+  .pager {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
 
-    .forward .onward-summary {
-      margin-inline-start: 0;
-    }
+  .pager .button {
+    height: auto;
+    min-height: 44px;
+    padding-block: 10px;
+    line-height: 1.3;
   }
 </style>

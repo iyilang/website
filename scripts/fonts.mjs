@@ -11,7 +11,7 @@
 //     cannot read it also cannot read the `@media (prefers-color-scheme)` and
 //     the custom properties this site is built out of. Those files were half
 //     the font payload and zero of the font traffic.
-//   * `@fontsource/ibm-plex-mono/400.css` and its siblings pull the cyrillic,
+//   * A `@fontsource` stylesheet and its siblings pull the cyrillic,
 //     cyrillic-ext and vietnamese subsets in with the latin ones. The site is
 //     in English with Turkish proper nouns. Those subsets can never match a
 //     codepoint on any page here.
@@ -48,24 +48,22 @@ const require = createRequire(import.meta.url);
 /**
  * The faces the stylesheets ask for, and nothing else.
  *
- * The mono list is the set of weights `src/styles` and the components actually
- * declare: 400 body code, 400 italic for comments (IBM Plex Mono was chosen
- * over the ligature monos for its true italic), 500 for a Crystal keyword and
- * the small-caps labels, 600 for a measured value and for `.tok-rule`, the one
- * emphasis this site draws. There is deliberately no 700: `code.css` used to
- * ask for one, no 700 face was ever loaded, and a weight nothing can render is
- * either a synthetic smear or a silent fall back to 600. It now asks for the
- * 600 it gets.
+ * Both families are variable, so one file per subset covers every weight the
+ * stylesheets name and the in-between weights the headings use (650, 750) are
+ * real interpolations rather than matches.
  *
- * Figtree is variable, so one file per subset covers 300 through 900 and the
- * 650 and 800 the headings use are real interpolations rather than matches.
+ * Mona Sans ships with its width axis because the display type asks for it:
+ * the headings and the large figures are set at `font-stretch: 106%` to
+ * `108%`. The width file is the heavier one, and it is the one the design
+ * draws with; a `wght`-only file would render those headings at 100% and
+ * quietly be a different typeface.
+ *
+ * JetBrains Mono is upright only. Comments are set in a muted colour rather
+ * than in italic, so no italic face is asked for and none ships.
  */
 const FACES = [
-  { pkg: "@fontsource-variable/figtree", sheet: "wght.css" },
-  { pkg: "@fontsource/ibm-plex-mono", sheet: "400.css" },
-  { pkg: "@fontsource/ibm-plex-mono", sheet: "400-italic.css" },
-  { pkg: "@fontsource/ibm-plex-mono", sheet: "500.css" },
-  { pkg: "@fontsource/ibm-plex-mono", sheet: "600.css" },
+  { pkg: "@fontsource-variable/mona-sans", sheet: "wdth.css" },
+  { pkg: "@fontsource-variable/jetbrains-mono", sheet: "wght.css" },
 ];
 
 /**

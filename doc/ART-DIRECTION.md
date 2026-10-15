@@ -16,18 +16,19 @@ and to stay honest under the reader who checks: every figure on a page is
 either counted from the tree or stamped with the machine that measured it, and
 `scripts/no-transcription.mjs` fails the build if one is typed by hand.
 
-The look is deliberately unremarkable. White ground, a sans-serif, a mono for
-anything a machine printed, one accent, rounded cards, and nothing else. The
-mascot supplies all the character the page needs; a second ornament would
-compete with it.
+The look is a dark page with warm greys, a wide sans for the author, a mono
+for anything a machine printed, one red accent and a green and an amber that
+report how a run ended. Rounded cards on hairlines carry the evidence. The
+mascot supplies the character, and the type does the rest: the headings are
+set a little wide and tight, so they carry weight without going to black.
 
 ## The mascot
 
 `src/assets/mascot.png`, cut out of its background so it sits on the page
-ground in either scheme. It appears in four places and no more: large in the
-hero, small beside the wordmark in the header, at the foot of every page, and
-as the favicon, cropped to the face. It is
-never used as a bullet, a spinner, a badge or a reaction. The `i` on each
+ground in either scheme. It appears beside the wordmark in the header and at
+the foot of every page, small in front of the eyebrow that opens each section
+page, and as the favicon, cropped to the face. It is never used as a bullet in
+a list, a spinner or a reaction. The `i` on each
 cheek is the tittle, the dot that in Turkish orthography separates `i` from
 dotless `ı`; the same dot terminates every section rule on the site.
 
@@ -36,8 +37,8 @@ drawing is 1200px across; the header mark is 28px. Served out of `public/` it
 was the same file every time, so a reader paid the hero's weight to draw a mark
 the width of a word, four times a page. Through `astro:assets` each call site
 asks for the size it draws at, `densities={[1, 2]}` covers a retina screen, and
-the build emits exactly those. The hero keeps `fetchpriority="high"` because it
-is the largest thing painted above the fold; every other placement is lazy.
+the build emits exactly those. The header mark and the eyebrow are eager,
+because they are above the fold; the footer's is lazy.
 
 ## Palette
 
@@ -46,106 +47,100 @@ are used in is computed by `scripts/contrast.mjs` on each build and the build
 fails under the floor the pair's role requires, so no ratio is written down
 here or there: the file that once recorded five of them had four wrong.
 
+The values are the redesign's, and where one of them fell under its floor it
+was moved the least distance that clears it, by the gate's own arithmetic:
+`--mute` in both schemes, `--boundary` in both, and `--brand-dark`, whose white
+button label sat under 4.5. Separators and soft grounds were alphas in the
+redesign; here they are the solid colour each composites to over the page,
+because an alpha is invisible to the gate.
+
+**Dark is the default on a screen.** It is the scheme the page is designed in,
+and the light one is the reader's choice, remembered.
+
 | Token | Value | Where it is used |
 |---|---|---|
 | `--paper` | `#ffffff` | Page ground. |
-| `--raise` | `#f7f7f8` | Alternating bands, cards, code blocks, the footer. |
-| `--ink` | `#1c1c1e` | Text and headings. |
-| `--graphite` | `#4d4f53` | Secondary prose, captions, console output. |
-| `--mute` | `#676a6f` | Labels, ticks, elision marks. |
-| `--hairline` | `#e3e4e8` | Every separator between two areas of the page. |
-| `--track` | `#eceef1` | The unfilled part of a gauge. |
-| `--boundary` | `#85888f` | The edge of a control, and nothing else. |
-| `--brand` | `#d1333d` | The mascot's red. Buttons, figures, the tittle. |
-| `--brand-deep` | `#ad1f29` | Links and any brand text that has to pass AA on white. |
-| `--brand-soft` | `#fdeeee` | The tinted ground a caveat sits on. |
-| `--glove` | `#ecb643` | The mascot's yellow. Reserved; the mascot carries it. |
-| `--signal-deep` | `#8a151d` | The darkest cut of the accent, for a loss set small. |
+| `--raise` | `#f6f5f3` | The footer, a console's ground, inline code, a hovered row. |
+| `--card` | `#ffffff` | Cards, steps, the tour's groups. |
+| `--code` | `#f8f7f5` | A listing's ground. |
+| `--ink` | `#0e0c0b` | Text and headings. |
+| `--graphite` | `#4a4540` | Secondary prose, leads, captions. |
+| `--mute` | `#746d67` | Labels, line numbers, the bars of code frames. |
+| `--hairline` | `#e8e7e6` | Every separator between two areas of the page. |
+| `--boundary` | `#8d8c8b` | The edge of a control, and nothing else. |
+| `--brand` | `#e5203a` | The mascot's red. The primary button, a selected step's mark. |
+| `--brand-deep` | `#c8102e` | Links, eyebrows, keywords, and any red set as text. |
+| `--brand-soft` | `#fdeff1` | The ground of a red chip or an errored line. |
+| `--on-brand` | `#ffffff` | The label on a red button. |
+| `--ok` | `#167d3b` | A run that came back clean, strings in a listing, iyi's bar. |
+| `--warn` | `#9a5b00` | A run with something to read, a recorded-only step, an edit notice. |
+
+And the dark scheme, declared under `-dark` names beside the light one and
+switched on by aliasing. `--on-brand` is white in both and has no dark name.
+
+| Token | Value |
+|---|---|
+| `--paper-dark` | `#0a0908` |
+| `--raise-dark` | `#100e0c` |
+| `--card-dark` | `#14110f` |
+| `--code-dark` | `#0e0c0b` |
+| `--ink-dark` | `#f4f1ee` |
+| `--graphite-dark` | `#a49d96` |
+| `--mute-dark` | `#837d76` |
+| `--hairline-dark` | `#1e1b19` |
+| `--boundary-dark` | `#66625f` |
+| `--brand-dark` | `#df3228` |
+| `--brand-deep-dark` | `#ff6157` |
+| `--brand-soft-dark` | `#210e0c` |
+| `--ok-dark` | `#5fd98a` |
+| `--warn-dark` | `#f5b451` |
 
 `--signal` is an alias of `--brand-deep`, because the measurement components
-address the accent by that name and a loss and a link get the same colour: the
-site has one accent, taken from the mascot, and spends it on what a reader can
-act on or should notice.
+address the accent by that name: a loss and a link get the same colour.
 
 `--hairline` and `--boundary` are not interchangeable and the split is the
 point. A hairline separates two areas of the page, which WCAG 1.4.11 exempts,
 and it is drawn faint on purpose. A boundary is the edge of a thing you can
 press, which 1.4.11 does not exempt, and every control on the site draws with
-it: the copy button, the ghost CTA, the declaration toggle, the chart's replay
-and the menu button. They used to draw with the hairline, which put every
-control's edge far under the floor.
+it.
 
-### The dark scheme
+### The two schemes
 
-This document used to say there was one scheme, because a second palette would
-be a second design to keep honest. That objection is answered rather than
-abandoned: `scripts/contrast.mjs` computes every declared pair on every build
-and fails under the floor, and the dark pairs are in its list, so the second
-palette is kept honest by the same machinery as the first. A dark scheme that
-was not gated would be exactly the thing the refusal was about.
+Three rules hold them together. Every colour is a literal declared once in the
+base `:root`, light under its own name and dark under a `-dark` name, and the
+scheme switch only aliases them, so no component knows which scheme it is in
+and the gate can see both palettes. The switch is `@media screen`, and the
+`screen` is load bearing: a print is always the light palette, so printing a
+lesson does not empty a toner cartridge into the page.
 
-| Token | Value | Note |
-|---|---|---|
-| `--paper-dark` | `#141418` | Ground. Not an inverted white, which reads as a smudge. |
-| `--raise-dark` | `#1d1d23` | Bands, cards, code blocks. |
-| `--ink-dark` | `#f0f0f2` | Text and headings. |
-| `--graphite-dark` | `#c3c5cb` | Secondary prose, captions, console output. |
-| `--mute-dark` | `#9ba0a8` | Labels, ticks, elision marks. |
-| `--hairline-dark` | `#33343c` | Separators. |
-| `--track-dark` | `#2b2c33` | Gauge track. |
-| `--boundary-dark` | `#6b6d76` | Control edges. |
-| `--brand-dark` | `#f4636d` | The accent, lifted so it carries against a dark ground. |
-| `--brand-deep-dark` | `#ff8f96` | The cut that passes AA as running text. |
-| `--brand-soft-dark` | `#2b171a` | The tinted ground a caveat sits on. |
-| `--glove-dark` | `#f0c25e` | Reserved, as in the light scheme. |
-| `--signal-deep-dark` | `#ffb3b8` | A loss set small. |
+And the reader can turn it off. The masthead carries one control that writes
+`data-theme="light"` onto `<html>` and remembers it; an inline script in the
+head restores that choice before the first paint, so a reader who chose light
+never sees a flash of the dark page. With scripts blocked the page is dark,
+which is what the stylesheet draws with nothing set.
 
-Three rules hold it together. Every colour is a literal declared once in the
-base `:root`, and both scheme switches only alias them, so no component knows
-which scheme it is in and the gate can see both palettes. The default switch
-is `@media screen and (prefers-color-scheme: dark)`, and the `screen` is load
-bearing: a print query matches a reader's colour preference too, and without it
-printing a lesson under a dark preference would empty a toner cartridge into
-the page.
-
-And the machine's answer can be overruled. The masthead carries one control,
-drawn with the mark of what the press will do, that writes `data-theme` onto
-`<html>` and remembers it. It is `display: none` until a script claims the
-masthead, the same handshake the menu button uses, so nothing that cannot
-work is ever offered: with scripts blocked the page is still whatever the
-machine prefers, which is what the media query decided before any of this.
-That is why the alias list is written twice in `src/styles/tokens.css`, once
-behind the preference and once behind the attribute, and the preference block
-carries `:not([data-theme="light"])` so the override can turn it off.
-
-The mark is geometry in the markup and not a character. The first draft used
-the moon and sun codepoints, both outside the latin and latin-ext subsets the
-site ships, so they fell back to whatever the reader's machine had; the second
-spelled the press as the mono words `dark` and `light`, which read as a label
-rather than a control and sat badly beside the menu button on a phone. Both
-are inline SVG now, hairline strokes in `currentColor` at the weight of the
-rules around them, and an emoji is still never an icon here. The switch and
-the menu button are one square each, the same box and the same edge, 36 to a
-side on a pointer and 44 on a thumb, so the pair reads as a pair.
-
-The mascot is cut out of its background and the code is set in weight rather
-than hue, which is why one drawing and one highlighting scheme serve both
-grounds.
+The mark is geometry in the markup and not a character, inline SVG in
+`currentColor`, and it names what the press will do: a dark page offers the
+sun.
 
 ## Type
 
 Two families. **The sans is the author, the mono is the machine.** Anything a
 command printed is set in mono, without exception.
 
-**Figtree** (OFL, variable) for prose and display. A friendly geometric sans
-with enough weight range to carry an 800 headline and a 400 paragraph, and it
-ships `latin-ext`, which is a requirement rather than a nicety: the project's
-name is Turkish and `ı İ ş ğ ç ö ü` must render.
+**Mona Sans** (OFL, variable in weight and width) for prose and display. The
+headings and the large figures are set at 106% to 108% of its width with
+negative tracking, which is what gives them their weight without going to
+black. That is why the width-axis file ships rather than the lighter
+weight-only one: without it those headings would render at 100%, and quietly
+be a different typeface. It ships `latin-ext`, which is a requirement rather
+than a nicety: the project's name is Turkish and `ı İ ş ğ ç ö ü` must render.
 
-**IBM Plex Mono** (OFL) for code, commands, output, labels and the evidence
-rail. Ligatures are disabled (`font-variant-ligatures: none`), because a site
-about a language's syntax must not silently redraw that syntax. Its true italic
-is what comments use.
+**JetBrains Mono** (OFL, variable) for code, commands, output, labels and the
+bars of code frames. Ligatures are disabled (`font-variant-ligatures: none`),
+because a site about a language's syntax must not silently redraw that syntax.
+Comments are set in a muted colour rather than in italic, so no italic face
+ships.
 
 Both are vendored through `@fontsource`, never fetched from a CDN. A site
 arguing that a program should link only what it uses does not pull webfonts
@@ -155,46 +150,44 @@ off a third party.
 packages and writes `src/generated/fonts.css`, which is the only font import in
 `src/layouts/Page.astro`. It keeps `woff2` and drops the legacy `woff` that sits
 beside every `@fontsource` face, and it keeps `latin` and `latin-ext` and drops
-`cyrillic`, `cyrillic-ext` and `vietnamese`. Importing the packages' own
-stylesheets shipped all of it: two thirds of the font payload was alphabets no
-page here contains and a format no browser capable of rendering this site would
-request. The `unicode-range` of each face is read out of the package and never
-authored, because typing it here would be a transcription of a machine value
-that goes stale silently, which is the defect this whole publication is
-arranged around.
-
-Four mono faces ship, and they are the four the stylesheets ask for: 400, 400
-italic, 500 and 600. There is deliberately no 700. `code.css` used to ask for
-one for `.tok-rule`, the site's single typographic emphasis, and no 700 face
-was ever loaded, so that emphasis was either a synthetic smear or a silent
-match to the 600 depending on the reader's browser. It asks for the 600 it
-gets. Figtree is variable, so 650 and 800 are real interpolations.
+every other alphabet. The `unicode-range` of each face is read out of the
+package and never authored, because typing it here would be a transcription of
+a machine value that goes stale silently.
 
 Two faces are preloaded, the latin sans and the latin mono, because every page
-needs both before it can draw a word and they are otherwise discovered a round
-trip late. The rest are left to be discovered: preloading a face a page does
-not use is the waste this section is about.
+needs both before it can draw a word. The `latin-ext` files are left to be
+discovered: a page with no Turkish letter on it never asks for them.
 
-Numerals are tabular everywhere so figures in a column compare by eye. The
-scale is fluid, ratio 1.25, `--step--2` through `--step-5`.
+Numerals are tabular everywhere so figures in a column compare by eye. Body
+copy is fixed at 16px; the headings are fluid between a phone and the page
+width, `--step-1` through `--step-4`.
 
 ## Layout
 
 Two containers, declared once in `src/styles/base.css`.
 
-`.wrap` is the page: `min(72rem, 100% - 2 * edge)`, centred. The header, the
-footer and every home page section use it, and the home page alternates white
-and `--raise` bands across the full width with a hairline between them.
+`.wrap` is the page: `min(70rem, 100% - 2 * edge)`, centred, with a 20px edge.
+The header and the footer line up with it.
 
 `.spread` is the reading page: a `68ch` measure with a `21ch` rail beside it,
 as named grid lines, so a component can opt into `main`, `rail`, `wide` or
 `full` without knowing the page. Below 62rem the rail collapses under the
-measure. The rail is where provenance lives, at a fixed position, never behind
-a hover: a fact whose source you have to go looking for is being presented as
-trust rather than as evidence.
+measure. The rail is where provenance lives on a lesson, at a fixed position,
+never behind a hover.
 
-Cards have an 8px radius, 14px on the home page grid. Hairlines separate;
-there are no shadows.
+A section page is a hero and then sections, each a heading block beside its
+evidence in a two-column `.split` that stacks on a phone. The shared pieces
+are in `src/styles/site.css`: the type classes, `.sec`, `.split`, `.grid4`,
+`.card`, `.code`, `.tabs`, `.chip`, `.tbl`. Anything one page draws stays in
+that page's scoped style.
+
+Cards have a 16px radius, code frames 14px. Hairlines separate. There are two
+kinds of lift and no more: a selected tab sits on a one-pixel shadow, and the
+two replay panels, the rebuild and the agent race, are lit instruments with a
+gradient edge and a drop shadow. A hatch, drawn as a repeating gradient, marks
+what a figure leaves out: the part of Crystal's square iyi's hello does not
+need, and a module whose body a build skipped.
+The masthead is translucent and blurs what scrolls under it.
 
 ## Code display
 
@@ -204,7 +197,10 @@ highlighter, into `records/highlight.json`, so what counts as a token is
 answered by the lexer and never by a grammar this site maintains. The site adds
 one class after the fact: `.tok-rule`, weight 600, on the keywords that are
 iyi's and not Crystal's (`module`, `import`, `using`, `pub`, `trait`, `impl`,
-`type`, `abstract`). Everything else is weight, not hue. `forall` and `derive`
+`type`, `abstract`). Three hues and no more: keywords in `--brand-deep`,
+strings in `--ok`, comments in `--mute`, and the rest is ink. The rules keep
+their extra weight on top of the hue, so the delta still reads in a printout
+or to a reader who cannot tell red from green. `forall` and `derive`
 are contextual in iyi's parser and reach the page as bare text; emphasising
 them is a change to the compiler's highlighter, not to this site.
 
@@ -213,7 +209,7 @@ source block shows its path in a header.
 
 **Three block types, because they are three kinds of evidence.** A `.source`
 block is code you could write. A `.console` block is a recording of a real
-run: terminal chrome, a mute `$` prompt, and output that is never highlighted
+run: a caption bar, a mute `$` prompt, and output that is never highlighted
 because nothing highlighted it in the terminal. A `.diagnostic` block is a
 compiler error, caret line preserved exactly, with the rule it cites pulled
 into a footer that names the SPEC.md section and line the premise is stated
@@ -229,9 +225,10 @@ counted from the tree, identical on every machine, and rendered flat and inline
 by `Measure`, which throws if the key is absent from `facts.json`.
 
 A **recorded** number is a second, a byte, a millisecond: a machine, not a
-language. It is rendered only by `Stamped`, whose left edge is a ruler of ticks
-so the eye reads "this came off an instrument" before it reads any text. The
-headline of the card is the ratio, because a ratio survives the machine; the
+language. It is rendered only by `Stamped`, a card whose bar reads
+`measured · ` and what it is a measurement of, so the eye reads "this came off
+an instrument" before it reads the figure. The headline of the card is the
+ratio, set at display size, because a ratio survives the machine; the
 absolute sits in the body beside its spread.
 
 The card does not print the box it came off. It did, as a labelled `MACHINE`
@@ -259,18 +256,15 @@ a control that cannot do anything is not offered.
 
 ## Motion
 
-The site declares motion in four places and no more: the CTA's background
-transition, the hamburger's bars, and the chart's two keyframe animations.
-
-Every one of them is switched off under `@media (prefers-reduced-motion:
-reduce)`, in CSS, next to the rule it disables. Not in a script. The preference
-was honoured only by a `matchMedia` check inside the chart's client script,
-which meant it was honoured only for readers who run scripts, and there was no
-`prefers-reduced-motion` query in any stylesheet at all.
+Every transition and animation on the site is switched off under
+`@media (prefers-reduced-motion: reduce)`, in CSS, by one rule in
+`src/styles/base.css`. Not in a script: a preference that only a running
+script respects is not respected.
 
 Nothing is hidden to satisfy the preference. Reduced motion shows the settled
 state rather than a faster animation, because a shortened animation would be a
-false reading, and the settled state is what the page draws anyway.
+false reading, and the settled state is what the page draws anyway. The /agents
+race, under the preference, is drawn finished and does not loop.
 
 ## Reachability
 
@@ -323,11 +317,19 @@ because the bars are the measurement.
 
 ## Imagery
 
-The mascot, and the artifact. There is no photography, no stock, no gradient
-and no decorative abstraction. Beyond the mascot, every visual is generated
-from something the repository produces: duration figures from the measurement
-record, mass figures at true area, and structure diagrams set typographically
-in mono with hairline edges. An emoji is never an icon.
+The mascot, and the artifact. There is no photography, no stock and no
+decorative abstraction. Beyond the mascot, every visual is generated from
+something the repository produces: duration figures from the measurement
+record, mass figures at true area, a recorded session rendered line by line.
+
+Two visuals are illustrative, and each page that shows one says so under it.
+The home page's rebuild names its modules and its edit for the sake of the
+picture; the two durations it runs for, the module count and the ratio are the
+measured ones. The agent race, on /agents and in the home page's agents
+section, generates its scrolling module bodies from a fixed seed in the
+browser; the figures it lands on are read out of `facts.json`, and so is the
+line naming the samples they were measured on. Both are in the built HTML
+finished, and the script replays them.
 
 ## Rendered proof
 
@@ -345,13 +347,15 @@ Captured from the running site in a browser.
 
 Recorded because each is a way this specific site could fail.
 
-- No gradient, no glassmorphism, no floating orbs, no icon strip.
+- No gradient and no shadow beyond the ones named under Layout. No floating
+  orbs, no icon strip.
 - No emoji used as an icon, and no mascot used as one.
-- No em-dash and no en-dash in authored copy. A verbatim record, compiler
+- No em-dash in authored copy, and an en-dash only between the two ends of a
+  numeric range set as a figure, `31–43%`. A verbatim record, compiler
   output, README quotation or sample source, is reproduced exactly, dashes
   included, because editing a recording to satisfy a house style turns it into
   a paraphrase.
-- No hue in syntax highlighting.
+- No hue in syntax highlighting beyond the three named under Code display.
 - No recorded number outside a measurement card.
 - No hand-transcribed number anywhere. See `doc/STACK.md`.
 - No time estimate in any copy, including anything implying how long learning
@@ -360,9 +364,12 @@ Recorded because each is a way this specific site could fail.
   modules; it does not compile what a visitor types, and the page says so.
 - No figure that only exists once a script has run. Every measurement is drawn
   by the stylesheet from data in the built HTML, and a script may animate it,
-  never reveal it.
-- No control offered where it cannot act. A menu button and a replay button
-  appear only once a script has claimed them.
+  never reveal it. The rebuild, the agent race and the recorded loop are all
+  in the built HTML, finished; the script replays the first two and folds the
+  third into tabs.
+- No control offered where it cannot act. The menu button, the scheme switch,
+  every replay button, the loop's tabs and its reader switch appear only once
+  a script has claimed them.
 - No colour outside `src/styles/tokens.css`. Both schemes are literals in the
   base `:root`; the dark scheme only aliases them. A `<meta name="theme-color">`
   and the web manifest take a literal and no variable, so they read the token

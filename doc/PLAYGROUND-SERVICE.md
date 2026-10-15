@@ -118,10 +118,10 @@ output and compiler diagnostics arriving in the output pane; and a sentence in
 the output pane on load saying what happens to what you type.
 
 **Take the structure and the interaction model. Do not take the look.** This
-site has an art direction, `doc/ART-DIRECTION.md`, and it binds: paper
-ground, two families and no third, weight-only syntax emphasis with no hue, the
-signal colour reserved for losses and caveats, hairlines rather than shadows,
-and no sans-serif anywhere. A playground that arrived in another site's visual
+site has an art direction, `doc/ART-DIRECTION.md`, and it binds: the page
+ground, two families and no third, three hues in syntax and no more, the
+accent reserved for what a reader can act on and for losses, hairlines rather
+than shadows. A playground that arrived in another site's visual
 language would be the first page here that did not belong to the publication.
 
 ```

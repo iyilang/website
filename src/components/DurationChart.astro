@@ -2,20 +2,18 @@
 /**
  * The edit loop, drawn at 1:1 real time.
  *
- * This is the site's spine, and it is the project's own idea rather than a
- * borrowed one: doc/assets/edit-loop.anim.svg is already an animated bar chart
- * drawn by the run that measured it. This component is that chart with the two
- * things a README cannot have.
+ * Each bar takes exactly as long to fill as the build it stands for took, once,
+ * when it is scrolled to, with a control to run it again. An infinite loop
+ * would turn a measurement into decoration.
  *
- * First, a control. The README's SVG loops forever because a static image has
- * no other way to be seen; a page can wait until it is scrolled to, run once,
- * and offer to run again. An infinite loop turns a measurement into decoration.
+ * The bars are the fastest of the published sessions. The card around this
+ * chart carries the ratio across all of them, which is the claim: the seconds
+ * moved between sessions and the ratio held.
  *
- * Second, the spread. README.md publishes three sessions and says to read the
- * columns against each other because they pay the same machine together. So
- * every bar carries a whisker to its slowest reading, and the headline is the
- * ratio, which held across all three. The bar is what varied. The ratio is the
- * claim.
+ * SETTLED IS THE DEFAULT. Each bar's finished width is written into the built
+ * HTML as an inline custom property and the stylesheet draws it, so with
+ * scripts off this is a finished bar chart. The script only ever takes the
+ * width away and gives it back at real speed.
  *
  * Nothing here is typed in. Every value comes from bench/site_facts.py.
  */
@@ -25,213 +23,90 @@ const loop = facts.recorded.edit_loop;
 const sessions = loop.sessions as Array<Record<string, number>>;
 const series = loop.series as Array<{ key: string; label: string }>;
 
-// Scale to the slowest reading of any series in any session, so a whisker can
-// never run off the end of its own track.
-const ceiling = Math.max(
-  ...sessions.flatMap((s) => series.map((x) => s[x.key])),
-);
-
 const rows = series.map(({ key, label }) => {
-  const readings = sessions.map((s) => s[key]);
-  const fast = Math.min(...readings);
-  const slow = Math.max(...readings);
-  return {
-    key,
-    label,
-    fast,
-    slow,
-    spread: slow > fast,
-    fastPct: (fast / ceiling) * 100,
-    slowPct: (slow / ceiling) * 100,
-  };
+  const fast = Math.min(...sessions.map((s) => s[key]));
+  return { key, label, fast };
 });
-
-const ratios = loop.ratios as number[];
-const lo = Math.min(...ratios);
-const hi = Math.max(...ratios);
+const slowest = Math.max(...rows.map((r) => r.fast));
 ---
 
-<div class="chart" data-slowest={String(Math.max(...rows.map((r) => r.slow)))}>
-  <div class="chart-head">
-    <span class="label">the loop, at the speed you wait at</span>
-    <button class="replay" type="button" data-replay aria-live="off">
-      run again
-    </button>
-  </div>
-
+<div class="chart" data-slowest={String(slowest)}>
   <ol class="rows">
     {
       rows.map((row) => (
-        <li class="row" data-key={row.key}>
+        <li class:list={["row", { win: row.key === "iyi" }]}>
           <code class="cmd">
             <span class="prompt">$ </span>
             {row.label}
           </code>
-          <div class="gauge">
-            <div class="track"></div>
-            {row.spread && (
-              <div
-                class="whisker"
-                style={`left:${row.fastPct}%;width:${row.slowPct - row.fastPct}%`}
-                title={`slowest session ${row.slow.toFixed(2)} s`}
-              ></div>
-            )}
-            <div
-              class="bar"
-              style={`--to:${row.fastPct}%;--dur:${row.fast}s`}
-            ></div>
-            <span class="reading" style={`--at:${row.fastPct}%;--dur:${row.fast}s`}>
-              {row.fast.toFixed(2)} s
-            </span>
+          <span class="reading">{row.fast.toFixed(2)} s</span>
+          <div class="bar">
+            <i style={`--to:${(row.fast / slowest) * 100}%;--dur:${row.fast}s`} />
           </div>
         </li>
       ))
     }
   </ol>
-
-  <p class="spread-note">
-    Bars are the fastest of {sessions.length} published sessions. The hairline
-    behind each one runs to that session's slowest reading, {
-      rows.find((r) => r.key === "crystal")!.slow.toFixed(2)
-    } s at the far end. The ratio held from {lo.toFixed(2)}x to {hi.toFixed(2)}x
-    while the seconds moved, which is why the ratio is the claim.
-  </p>
 </div>
 
 <script>
-  // Run once when seen, not on a loop.
-  //
-  // THE DEFECT THIS SHAPE EXISTS TO PREVENT. This script used to be what made
-  // the figure appear: the bars were `width: 0` and the readings `opacity: 0`
-  // in CSS, and only the classes added here granted them a size. With scripts
-  // blocked, the home page's and the why page's flagship evidence rendered as
-  // an empty frame. On a site whose whole rule is that a figure has to be
-  // visible to be checkable, the measurement was the one thing that was not.
-  //
-  // So the settled state is now the default in the stylesheet, and this script
-  // only ever ADDS an animation that starts from zero and lands back on it.
-  // Take the script away and the chart is a finished bar chart; take the
-  // animation away and nothing is lost but the pacing.
-  //
-  // Reduced motion is honoured by doing nothing at all, rather than by
-  // animating faster: the animation IS the measurement, so a shortened one
-  // would be a false reading. The stylesheet pins the same thing, because a
-  // preference that only a running script respects is not respected.
-  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+  import { playWhenSeen, reducedMotion } from "../lib/play-when-seen";
+
+  // Run once when seen, and again on request. Reduced motion is honoured by
+  // doing nothing at all rather than by animating faster: the animation IS the
+  // measurement, so a shortened one would be a false reading.
 
   document.querySelectorAll<HTMLElement>(".chart").forEach((chart) => {
-    if (reduce.matches) return;
+    if (reducedMotion()) return;
 
-    // The replay control is hidden until this line, for the same reason the
-    // masthead's menu button is: a control that cannot do anything is not
-    // offered.
-    chart.dataset.js = "true";
+    // The replay control lives in the card's bar, which is the chart's
+    // figure. It is hidden until this line: a control that cannot do anything
+    // is not offered.
+    const figure = chart.closest("figure") ?? chart;
+    figure.setAttribute("data-chart", "ready");
 
     const play = () => {
-      chart.classList.remove("running");
-      // Force a reflow so re-adding the class restarts the animation.
+      chart.classList.remove("waiting", "running");
       void chart.offsetWidth;
       chart.classList.add("running");
       const slowest = Number(chart.dataset.slowest ?? "0");
-      // Dropping `running` after the slowest bar has landed hands the figure
-      // back to the default rules, which draw the same thing the animation
-      // ended on. There is no third state to keep in step.
       window.setTimeout(() => chart.classList.remove("running"), slowest * 1000 + 60);
     };
 
-    chart
-      .querySelector<HTMLButtonElement>("[data-replay]")
-      ?.addEventListener("click", play);
+    // The finished bars are what the HTML draws, for a reader with no
+    // script. With one, the bars start empty and wait to be read, so a
+    // reader scrolling past does not see the result before the run.
+    chart.classList.add("waiting");
 
-    const seen = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            play();
-            seen.disconnect();
-          }
-        }
-      },
-      { threshold: 0.45 },
-    );
-    seen.observe(chart);
+    figure.querySelector<HTMLButtonElement>("[data-replay]")?.addEventListener("click", play);
+
+    playWhenSeen(chart, play);
   });
 </script>
 
 <style>
-  .chart {
-    border: var(--hair) solid var(--hairline);
-    background: var(--raise);
-    padding: 0.9rem 1.1rem 1rem;
-  }
-
-  .chart-head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 1rem;
-    padding-block-end: 0.8rem;
-    border-block-end: var(--hair) solid var(--hairline);
-  }
-
-  /* Offered only once the script has claimed the chart, because without one
-   * there is no animation to run again and a dead control is worse than no
-   * control. Same `data-js` handshake the masthead's menu button uses. */
-  .replay {
-    display: none;
-    font-family: var(--font-mono);
-    font-size: var(--step--2);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--graphite);
-    background: none;
-    border: var(--hair) solid var(--boundary);
-    border-radius: 2px;
-    padding: 0.22rem 0.55rem;
-    cursor: pointer;
-  }
-
-  .chart[data-js="true"] .replay {
-    display: inline-block;
-  }
-
-  .replay:hover {
-    color: var(--ink);
-    border-color: var(--graphite);
-  }
-
   .rows {
     list-style: none;
     margin: 0;
-    padding: 0.9rem 0 0;
-    display: grid;
-    gap: 0.55rem;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
   }
 
   .row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0.25rem;
-  }
-
-  @media (min-width: 44rem) {
-    .row {
-      grid-template-columns: minmax(0, 26ch) minmax(0, 1fr);
-      align-items: center;
-      gap: 1rem;
-    }
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 16px;
+    font-size: 13.5px;
   }
 
   .cmd {
-    font-family: var(--font-mono);
-    font-size: var(--step--2);
+    font-size: 12.5px;
     color: var(--ink);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    background: none;
-    border: 0;
-    padding: 0;
   }
 
   .prompt {
@@ -239,90 +114,43 @@ const hi = Math.max(...ratios);
     user-select: none;
   }
 
-  .gauge {
-    position: relative;
-    height: 15px;
-    display: flex;
-    align-items: center;
-  }
-
-  .track {
-    position: absolute;
-    inset-inline: 0;
-    height: 15px;
-    background: var(--track);
-    border-radius: 2px;
-  }
-
-  /* The spread. A hairline, hatched, because it is a range and not a value. */
-  .whisker {
-    position: absolute;
-    height: 15px;
-    border-block: var(--hair) solid var(--hairline);
-    background-image: repeating-linear-gradient(
-      45deg,
-      var(--hairline) 0 1px,
-      transparent 1px 4px
-    );
-  }
-
-  /* The bar is ink. A win is never coloured: the signal red on this site means
-   * a loss or a caveat, and iyi wins this row.
-   *
-   * SETTLED IS THE DEFAULT, and this is the load-bearing line of the file.
-   * `--to` and `--at` are written into the built HTML as inline custom
-   * properties by the frontmatter above, so the finished chart is in the
-   * document before a single byte of script runs. The rules under `.running`
-   * below take it away and give it back at real speed; they are the animation,
-   * not the drawing. This was the other way round, and the flagship
-   * measurement on the home page rendered as an empty frame with scripting
-   * off. */
-  .bar {
-    position: absolute;
-    left: 0;
-    height: 15px;
-    width: var(--to);
-    background: var(--ink);
-    border-radius: 2px;
-  }
-
   .reading {
-    position: absolute;
-    left: var(--at);
-    margin-inline-start: 0.55rem;
     font-family: var(--font-mono);
-    font-size: var(--step--2);
-    font-weight: 600;
-    color: var(--ink);
-    white-space: nowrap;
+    font-size: 12.5px;
+    color: var(--graphite);
   }
 
-  /* Real time: the bar takes exactly as long as the build took. `forwards`
-   * holds the end state, which is the state the element already had, so
-   * dropping `.running` when the run finishes is a no-op the eye cannot see. */
-  .chart.running .bar {
+  .win .reading {
+    color: var(--ok);
+  }
+
+  .bar {
+    grid-column: 1 / -1;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--raise);
+    overflow: hidden;
+  }
+
+  .bar i {
+    display: block;
+    height: 100%;
+    width: var(--to);
+    border-radius: 999px;
+    background: var(--mute);
+  }
+
+  .win .bar i {
+    background: var(--ok);
+  }
+
+  .chart.waiting .bar i {
+    width: 0;
+  }
+
+  /* Real time: the bar takes exactly as long as the build took. */
+  .chart.running .bar i {
     animation: grow var(--dur) linear forwards;
-  }
-
-  .chart.running .reading {
-    animation: reveal var(--dur) steps(1, end) forwards;
-  }
-
-  /* The preference, pinned in CSS and not only in the script. The script does
-   * check it, but a reader with scripting off has the preference too, and a
-   * reader whose script fails to run has it as well. Nothing is hidden here:
-   * the default above is already the finished figure, so all this removes is
-   * the motion, which is what was asked for. */
-  @media (prefers-reduced-motion: reduce) {
-    .chart.running .bar,
-    .chart.running .reading {
-      animation: none;
-    }
-
-    .replay,
-    .chart[data-js="true"] .replay {
-      display: none;
-    }
   }
 
   @keyframes grow {
@@ -332,24 +160,5 @@ const hi = Math.max(...ratios);
     to {
       width: var(--to);
     }
-  }
-
-  @keyframes reveal {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  .spread-note {
-    font-family: var(--font-mono);
-    font-size: var(--step--2);
-    line-height: 1.55;
-    color: var(--graphite);
-    margin: 1rem 0 0;
-    padding-block-start: 0.75rem;
-    border-block-start: var(--hair) solid var(--hairline);
   }
 </style>

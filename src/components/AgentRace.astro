@@ -1,0 +1,405 @@
+---
+/**
+ * The agent race: the same four verbs in two lanes, one grounded in the
+ * sources and one in `iyi mod context`'s pack, landing on the measured pack
+ * size and token saving.
+ *
+ * The figures are the measured ones, from facts.json, and so is the scope
+ * line: the samples `bench/context_pack.py` measures, which
+ * `bench/site_facts.py` reads out of that script. The code scrolling through
+ * the lanes is illustrative, and the page says so under the panel.
+ *
+ * SETTLED IS THE DEFAULT. Both lanes are built finished, every step ticked,
+ * the result in the foot, so with scripts off this is the result.
+ * `src/lib/agent-race.ts` takes it back to the start and replays it once the
+ * reader has scrolled and has it in view, on /agents as anywhere else: never
+ * at load, where it played out while the reader was still on the heading.
+ *
+ * Each step is a link to that step of the recorded loop on /agents, so it
+ * goes somewhere with scripts off too.
+ */
+import facts from "../generated/facts.json";
+
+interface Props {
+  /** Where the recorded loop is: `#loop` on /agents, a full path elsewhere. */
+  loop: string;
+  /** The link in the foot that leads to it. */
+  hint: string;
+}
+
+const { loop, hint } = Astro.props;
+const pack = facts.recorded.context_pack;
+const measuredOn = pack.targets.map((target) => target.entry.split("/").at(-1)).join(", ");
+---
+
+<div
+  class="race"
+  data-agent-race
+  data-modules={facts.structural.modules}
+  data-pack-low={pack.size_low}
+  data-pack-high={pack.size_high}
+  data-done="true"
+>
+  <div class="race-in">
+    <div class="race-top">
+      <span>
+        <i class="race-dot" data-dot data-done="true"></i>
+        <span class="race-title">same task, both arms</span>
+        <span>measured on {measuredOn}</span>
+      </span>
+      <button type="button" class="race-replay" data-replay>
+        <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M10 6a4 4 0 1 1-1.2-2.85M10 1.5v2.2H7.8" /></svg>
+        Replay
+      </button>
+    </div>
+    <div class="lanes">
+      {
+        [
+          { k: 0, name: "Reading the sources", what: "every body the edit depends on", final: "100%", width: 100 },
+          { k: 1, name: "With iyi", what: "iyi mod context: declarations only", final: `${pack.size_low}–${pack.size_high}%`, width: (pack.size_low + pack.size_high) / 2 },
+        ].map((lane) => (
+          <div class="lane" data-lane={lane.k} data-full={String(lane.k === 0)}>
+            <div class="lane-text" aria-hidden="true"></div>
+            <div class="lane-ui">
+              <div class="lane-head">
+                <b>{lane.name}</b>
+                <span>{lane.what}</span>
+              </div>
+              <div class="lane-foot">
+                <div class="lane-num">
+                  <b>{lane.final}</b>
+                  <span>of the sources' size</span>
+                </div>
+                <div class="lane-bar"><i style={`width:${lane.width}%`}></i></div>
+                <div class="lane-steps">
+                  {["read", "check", "fix", "test"].map((label, i) => (
+                    <a href={loop} data-goto={i} data-state="done" title="See this step in the recorded session">
+                      <span aria-hidden="true"></span>
+                      {label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+    <div class="race-foot" data-foot data-done="true">
+      <p class="when-done">
+        <b>
+          Same fix. <span class="ok">{pack.tokens_low}–{pack.tokens_high}% fewer prompt tokens,</span>{" "}
+          for no fewer rounds.
+        </b>
+        <a class="race-hint" href={loop}>{hint}</a>
+      </p>
+      <p class="when-running">Same four verbs in both lanes. Watch what each one has to read.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { wireAgentRace } from "../lib/agent-race";
+
+  document.querySelectorAll<HTMLElement>("[data-agent-race]").forEach(wireAgentRace);
+</script>
+
+<style>
+    .race {
+      border-radius: 18px;
+      padding: 1px;
+      background: var(--panel-frame);
+      box-shadow: var(--panel-shadow);
+    }
+
+    .race-in {
+      border-radius: 17px;
+      background: var(--code);
+      color: var(--ink);
+      overflow: hidden;
+    }
+
+    .race-top {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px 20px;
+      padding: 12px 18px;
+      border-bottom: var(--hair) solid var(--hairline);
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      color: var(--mute);
+    }
+
+    .race-top > span {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .race-title {
+      color: var(--ink);
+    }
+
+    .race-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--warn);
+    }
+
+    .race-dot[data-done="true"] {
+      background: var(--ok);
+    }
+
+    .race-replay {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      appearance: none;
+      cursor: pointer;
+      padding: 5px 10px;
+      border-radius: 7px;
+      border: var(--hair) solid var(--boundary);
+      background: none;
+      color: var(--ink);
+      font: 600 12.5px var(--font-sans);
+    }
+
+    .race[data-js="true"] .race-replay {
+      display: inline-flex;
+    }
+
+    .race-replay svg {
+      width: 12px;
+      height: 12px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .lanes {
+      display: flex;
+      flex-wrap: wrap;
+    }
+
+    .lane {
+      position: relative;
+      flex: 1 1 420px;
+      min-width: 0;
+      height: 300px;
+      overflow: hidden;
+      border-right: var(--hair) solid var(--hairline);
+      transition: background 0.4s;
+    }
+
+    .lane[data-lane="1"] {
+      background: color-mix(in srgb, var(--ok-soft) 45%, transparent);
+    }
+
+    .lane-text {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 52px;
+      bottom: 150px;
+      padding: 0 20px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      font-family: var(--font-mono);
+      pointer-events: none;
+      -webkit-mask-image: linear-gradient(180deg, transparent, #000 45%, #000 80%, transparent);
+      mask-image: linear-gradient(180deg, transparent, #000 45%, #000 80%, transparent);
+    }
+
+    .lane[data-lane="0"] .lane-text {
+      font-size: 10.5px;
+      line-height: 1.35;
+      color: var(--mute);
+    }
+
+    .lane[data-lane="1"] .lane-text {
+      font-size: 12.5px;
+      line-height: 1.9;
+      color: var(--graphite);
+    }
+
+    .lane-text :global(div) {
+      flex: none;
+      white-space: pre;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .lane-ui {
+      position: relative;
+      height: 100%;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .lane-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+    }
+
+    .lane-head b {
+      font-size: 14px;
+      font-weight: 650;
+      color: var(--graphite);
+    }
+
+    .lane[data-lane="1"] .lane-head b {
+      color: var(--brand-deep);
+    }
+
+    .lane-head span {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--mute);
+    }
+
+    .lane-foot {
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .lane-num {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    .lane-num b {
+      font: 500 clamp(52px, 7vw, 84px) / 0.9 var(--font-mono);
+      letter-spacing: -0.03em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .lane-num span {
+      font-size: 13px;
+      color: var(--graphite);
+    }
+
+    .lane-bar {
+      height: 8px;
+      border-radius: 999px;
+      background: var(--hairline);
+      overflow: hidden;
+    }
+
+    .lane-bar i {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+      background: var(--mute);
+      transition: width 0.2s linear;
+    }
+
+    .lane[data-full="true"] .lane-bar i {
+      background: var(--graphite);
+    }
+
+    .lane[data-lane="1"] .lane-bar i {
+      background: var(--ok);
+    }
+
+    .lane-steps {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .lane-steps a {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font: 11.5px var(--font-mono);
+      color: var(--mute);
+      background: var(--raise);
+      text-decoration: none;
+    }
+
+    .lane-steps a[data-state="done"],
+    .lane-steps a[data-state="active"] {
+      color: var(--ink);
+      background: var(--hairline);
+    }
+
+    .lane-steps a span::before {
+      content: "·";
+    }
+
+    .lane-steps a[data-state="active"] span::before {
+      content: "…";
+    }
+
+    .lane-steps a[data-state="done"] span::before {
+      content: "✓";
+      color: var(--ok);
+    }
+
+    .race-foot {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px 20px;
+      padding: 16px 20px;
+      border-top: var(--hair) solid var(--hairline);
+      min-height: 66px;
+      background: var(--raise);
+      transition: background 0.4s;
+    }
+
+    .race-foot[data-done="true"] {
+      background: var(--ok-soft);
+    }
+
+    .race-foot p {
+      margin: 0;
+      width: 100%;
+    }
+
+    .when-done {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 8px 20px;
+    }
+
+    .when-done b {
+      font-weight: 750;
+      font-stretch: 108%;
+      font-size: clamp(20px, 2.4vw, 28px);
+      letter-spacing: -0.025em;
+    }
+
+    .race-hint {
+      margin-left: auto;
+      font-size: 13px;
+      color: var(--graphite);
+    }
+
+    .when-running {
+      font-size: 15px;
+      color: var(--graphite);
+    }
+
+    .race-foot[data-done="true"] .when-running,
+    .race-foot[data-done="false"] .when-done {
+      display: none;
+    }
+</style>

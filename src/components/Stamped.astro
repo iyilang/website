@@ -4,140 +4,120 @@
  *
  * These are a machine, not a language, so the headline is the RATIO, because
  * a ratio survives the machine. The absolute is demoted to the body, where it
- * sits next to its spread. The frame is a calibration card and its left edge
- * carries instrument ticks, which is the visual signature that separates a
- * recorded number from a structural one at a glance.
+ * sits next to its spread. The card's bar names it as measured and says what
+ * it is a measurement of, which is what separates a recorded number from a
+ * structural one at a glance: a structural number is set inline and has no
+ * card.
  *
- * THE CARD USED TO CARRY ITS OWN PROVENANCE and no longer does. It printed
- * MACHINE and PRINTS IT as a labelled rail under every claim, and with six
- * recorded facts on the site that was four rows of near-identical furniture
- * per card. It is gone from the page.
+ * The card does not repeat its provenance. The record still has it and is
+ * still gated: `scripts/facts.mjs` refuses to write `facts.json` when a
+ * recorded group names no command or no machine, so every figure this
+ * component renders is one whose box and command are written down in the
+ * repository, and the colophon on every page names the generator and the
+ * commit.
  *
- * Where it went, and this is the part that matters: the record still has it
- * and is still gated. `scripts/facts.mjs` refuses to write `facts.json` when
- * a recorded group names no command or no machine, so every figure this
- * component renders is still one whose box and command are written down and
- * checkable in the repository. The colophon on every page names the generator
- * and the commit. What changed is that the page no longer repeats the box
- * beside each number; what did not change is that a number with no box cannot
- * reach the page at all, because it cannot reach the record.
+ * Slots: `figure` draws above the claim (a chart, a pair of squares),
+ * `action` sits at the right of the bar (a replay control), and the default
+ * slot is the body under the claim.
  */
 interface Props {
   /** The claim, machine-independent, stated large. */
   claim: string;
+  /** The rest of the sentence, set under the claim at body weight. */
+  tail?: string;
   /** What the claim is a claim about. */
   subject: string;
   /** Optional band, where a claim held across several readings. */
   band?: string;
   /** Marks a measurement iyi loses. Drives the signal colour. */
   outcome?: "win" | "loss" | "flat";
+  /** Set the claim in the green a passing run is reported in. */
+  accent?: boolean;
 }
 
-const { claim, subject, band, outcome = "flat" } = Astro.props;
+const { claim, tail, subject, band, outcome = "flat", accent = false } = Astro.props;
+
+/* A figure reads at display size; a sentence would not fit at it. */
+const long = claim.length > 26;
+const hasFigure = Astro.slots.has("figure");
+const hasBody = Astro.slots.has("default");
 ---
 
-<figure class="stamped" data-outcome={outcome}>
-  <div class="ticks" aria-hidden="true"></div>
+<figure class="card stamped" data-outcome={outcome}>
+  <figcaption class="card__bar">
+    <span>measured · {subject}</span>
+    <slot name="action" />
+  </figcaption>
 
-  <div class="card">
-    <figcaption class="head">
-      <span class="label">measured</span>
-      <span class="subject">{subject}</span>
-    </figcaption>
+  <slot name="figure" />
 
-    <p class="claim">{claim}</p>
-    {band && <p class="band">{band}</p>}
-
-    <div class="body"><slot /></div>
+  <div class:list={["stat", { first: !hasFigure }]}>
+    <p class:list={["claim", { long, ok: accent }]}>{claim}</p>
+    {tail && <p class="tail">{tail}</p>}
+    {band && <p class="p band">{band}</p>}
   </div>
+
+  {
+    hasBody && (
+      <div class="stat body">
+        <slot />
+      </div>
+    )
+  }
 </figure>
 
 <style>
   .stamped {
-    margin: 1.8rem 0;
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  /* Instrument ticks. A recorded number came off a machine, and this is the
-   * mark that says so. A structural number has no ticks, which is how the two
-   * classes stay visually distinct without a colour or a badge. */
-  .ticks {
-    width: 13px;
-    border-block: var(--hair) solid var(--hairline);
-    border-inline-start: var(--hair) solid var(--hairline);
-    /* A ruler edge. Every sixth pixel carries a tick, and every fifth tick is
-     * long, the way a scale is marked, so the eye reads "instrument" before it
-     * reads any text. A structural number has no edge at all, and that absence
-     * is the whole distinction between the two classes. */
-    background-image:
-      repeating-linear-gradient(
-        to bottom,
-        var(--mute) 0 1px,
-        transparent 1px 6px
-      ),
-      repeating-linear-gradient(
-        to bottom,
-        var(--graphite) 0 1px,
-        transparent 1px 30px
-      );
-    background-size:
-      5px 100%,
-      10px 100%;
-    background-position:
-      left top,
-      left top;
-    background-repeat: no-repeat, no-repeat;
-  }
-
-  .card {
-    border: var(--hair) solid var(--hairline);
-    border-inline-start: 0;
-    /* The bottom used to be zero because the provenance rail carried its own
-     * padding. With the rail gone the card closes itself. */
-    padding: 0.95rem 1.15rem 1.1rem;
-    background: var(--raise);
-  }
-
-  .head {
-    display: flex;
-    align-items: baseline;
-    gap: 0.7rem;
-    flex-wrap: wrap;
-    margin-block-end: 0.55rem;
-  }
-
-  .subject {
-    font-family: var(--font-mono);
-    font-size: var(--step--2);
-    color: var(--graphite);
-  }
-
-  /* The ratio. Set in the author's voice at display size, because it is the
-   * claim being made, and it does not move when the machine does. */
-  .claim {
-    font-family: var(--font-text);
-    font-variation-settings: "opsz" 48;
-    font-size: var(--step-3);
-    font-weight: 620;
-    line-height: var(--lead-tight);
-    letter-spacing: -0.015em;
     margin: 0;
+  }
+
+  .stat.first {
+    border-top: 0;
+  }
+
+  .claim {
+    margin: 0;
+    font-weight: 750;
+    font-stretch: 108%;
+    font-size: clamp(36px, 4.6vw, 52px);
+    line-height: 1;
+    letter-spacing: -0.04em;
     color: var(--ink);
+    text-wrap: balance;
+  }
+
+  .claim.long {
+    font-size: clamp(22px, 2.4vw, 28px);
+    line-height: 1.15;
+    letter-spacing: -0.025em;
+  }
+
+  .claim.ok {
+    color: var(--ok);
   }
 
   .stamped[data-outcome="loss"] .claim {
-    color: var(--signal);
+    color: var(--brand-deep);
+  }
+
+  .tail {
+    margin: 0;
+    font-weight: 600;
+    font-size: 17px;
   }
 
   .band {
-    font-family: var(--font-mono);
-    font-size: var(--step--1);
-    color: var(--graphite);
-    margin: 0.3rem 0 0;
+    margin-top: 4px;
   }
 
-  .body {
-    margin-block-start: 1rem;
+  .body :global(p) {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--graphite);
+  }
+
+  .body :global(p + p) {
+    margin-top: 6px;
   }
 </style>

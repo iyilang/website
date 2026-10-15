@@ -1,53 +1,44 @@
 ---
 /**
- * The agent claim, as a transcript.
+ * /agents: the loop an agent runs against iyi, as a recording.
  *
- * The site's first line says iyi is a language for people and their agents.
- * Every other claim here is measured or replayed; that one used to be four
- * paragraphs about verbs, and prose about a compiler is a claim about a
- * compiler rather than a reading of one. So this page shows the loop instead
- * of describing it, and shows nothing else.
+ * Three things on the page. The agent race at the top, which replays the
+ * measured result as an animation and says under it that it is a replay. The
+ * loop itself, four steps, every command and every byte it printed read out
+ * of records/agent.json, which `npm run record:agent` wrote against a real
+ * compiler. And the rebuild question, answered by the recorded `iyi mod diff`
+ * of the same project.
  *
- * NOTHING ON THIS PAGE IS TYPED. Every command line is the argv
- * `scripts/record-agent.mjs` spawned, every body is the bytes that came back,
- * every exit code is the status the process gave, and the listing is
- * transcluded out of `records/agent/` with the compiler's own lexer colouring
- * it. The recorder refuses to write its record when a verb's verdict moves,
- * when `check` stops offering an edit, when a body-only change starts moving
- * an interface, or when the answer over MCP stops matching the answer in a
- * shell. So a page that renders is a page whose frames still hold.
- *
- * IT IS SHORT ON PURPOSE. The first draft explained each frame twice, once
- * before it and once after, and carried a second copy of the suggested edit as
- * a field list beside the JSON that already contained it. A transcript that
- * needs a paragraph per line is not evidence, it is an argument with exhibits.
- * One sentence per frame, and the frame says the rest.
+ * Nothing is typed here that the recording or facts.json holds. The person
+ * reading of each frame is derived from the frame's own bytes below, so the
+ * two readings of one frame cannot say different things.
  */
+import { Image } from "astro:assets";
 import Page from "../layouts/Page.astro";
-import Frame from "../components/Frame.astro";
-import Sample from "../components/Sample.astro";
-import Stamped from "../components/Stamped.astro";
-import Measure from "../components/Measure.astro";
 import facts from "../generated/facts.json";
 import record from "../../records/agent.json";
-import thesis from "../generated/thesis.json";
+import mascot from "../assets/mascot.png";
+import Stamped from "../components/Stamped.astro";
+import AgentRace from "../components/AgentRace.astro";
 import { SPELLED } from "../lib/lessons";
 
 const base = import.meta.env.BASE_URL;
 const pack = facts.recorded.context_pack;
+/* What the pack and the tokens were measured on, as `bench/context_pack.py`
+ * declares it: each sample, and the modules whose sources it is weighed
+ * against. */
+const and = new Intl.ListFormat("en", { type: "conjunction" });
+const measuredOn = pack.targets.map((target) => ({
+  file: target.entry.split("/").at(-1),
+  imports: and.format(target.imports.map((path) => path.replace(/^samples\/iyi\/|\.iyi$/g, ""))),
+}));
+const taskFile = pack.task.split("/").at(-1);
 const provenance = record.recorded;
-const wire = record.wire;
 
-/** Which stream a verb answers on. JSON gives it as a string; the component
- * takes only these two, and a record naming a third is a record this page
- * cannot render honestly. */
-type Stream = "stdout" | "stderr";
+type Frame = (typeof record.frames)[number];
 
-const frames = Object.fromEntries(record.frames.map((f) => [f.id, f]));
-
-/** A frame by id, with the stream it answered on narrowed. */
-const frame = (id: string) => {
-  const found = frames[id];
+const frame = (id: string): Frame & { answer: string } => {
+  const found = record.frames.find((f) => f.id === id);
   if (!found) {
     throw new Error(
       `agents: records/agent.json has no frame "${id}". It has ` +
@@ -56,236 +47,269 @@ const frame = (id: string) => {
     );
   }
   if (found.payload !== "stdout" && found.payload !== "stderr") {
-    throw new Error(
-      `agents: frame "${id}" says it answers on "${found.payload}", and a ` +
-        `recording of a process has two streams. Re-record.`,
-    );
+    throw new Error(`agents: frame "${id}" answers on "${found.payload}", which is not a stream`);
   }
-  const payload = found.payload as Stream;
-  return { ...found, payload, answer: found[payload] };
+  return { ...found, answer: found[found.payload as "stdout" | "stderr"] };
 };
 
-/** The consumer being edited, which is the only listing this page shows. */
-const consumer = record.project.find((file) => file.name === "app.iyi");
-if (!consumer) {
-  throw new Error("agents: records/agent/app.iyi is not in the recording");
-}
+const projectFile = (name: string) => {
+  const found = record.project.find((file) => file.name === name);
+  if (!found) throw new Error(`agents: records/agent/${name} is not in the recording`);
+  return found;
+};
+
+const consumer = projectFile("app.iyi");
+const before = consumer.text.replace(/\n$/, "").split("\n");
+const after = record.repaired.text.replace(/\n$/, "").split("\n");
+
+const [edit] = record.suggested;
+if (!edit) throw new Error("agents: the recording carries no suggested edit to show");
+
+const importLine = before.findIndex((line) => line.startsWith("import ")) + 1;
+if (importLine === 0) throw new Error("agents: app.iyi imports nothing, so there is no surface to ground");
+
+/* The person's reading of each frame, derived from the frame. */
+type Row = { key: string; text: string; tone?: "error" | "ok" };
+
+const firstLine = (s: string) => s.split("\n")[0];
+
+const groundRows = (answer: string): Row[] => {
+  const pack = JSON.parse(answer) as {
+    imports: Array<{
+      import: string;
+      api: {
+        interface_hash: string;
+        functions: Array<{ rendered: string }>;
+        types: Array<{ name: string; kind: string; methods: Array<{ rendered: string }> }>;
+      };
+    }>;
+  };
+  return pack.imports.flatMap((entry) => [
+    { key: "import", text: `${entry.import} · interface ${entry.api.interface_hash.slice(0, 8)}` },
+    ...entry.api.functions.map((f) => ({ key: "def", text: f.rendered.replace(/^def /, "") })),
+    ...entry.api.types.map((t) => ({
+      key: t.kind,
+      text: `${t.name} · ${t.methods.map((m) => m.rendered).join(" · ")}`,
+    })),
+  ]);
+};
+
+const checkRows = (answer: string): Row[] => {
+  const verdict = JSON.parse(answer) as Array<{
+    line: number;
+    column: number;
+    message: string;
+    suggested_edit?: { line: number; column: number; size: number; replacement: string };
+  }>;
+  return verdict.flatMap((entry) => {
+    const rows: Row[] = [
+      {
+        key: `${entry.line}:${entry.column}${entry.suggested_edit ? " error" : ""}`,
+        text: firstLine(entry.message),
+        tone: entry.suggested_edit ? "error" : undefined,
+      },
+    ];
+    if (entry.suggested_edit) {
+      const s = entry.suggested_edit;
+      rows.push({
+        key: "fix",
+        text: `replace ${s.size} characters at ${s.line}:${s.column} with '${s.replacement}'`,
+        tone: "ok",
+      });
+    }
+    return rows;
+  });
+};
+
+const plainRows = (key: string, answer: string, silent: string, tone?: "ok"): Row[] =>
+  answer.trim() === "" ? [{ key, text: silent }] : [{ key, text: answer.trim(), tone }];
+
+const run = (id: string, label: string, rows: (answer: string) => Row[]) => {
+  const f = frame(id);
+  return { command: f.command, label, stream: f.payload, exit: f.exitCode, raw: f.answer, rows: rows(f.answer) };
+};
+
+const steps = [
+  {
+    title: "Ground the edit",
+    source: before,
+    mark: { line: importLine, tone: "warn" },
+    runs: [run("ground", "the grounding pack", groundRows)],
+  },
+  {
+    title: "Ask for the verdict",
+    source: before,
+    mark: { line: edit.line, tone: "err" },
+    runs: [run("check", "the compiler's verdict", checkRows)],
+  },
+  {
+    title: "Apply it, and confirm",
+    source: after,
+    mark: { line: edit.line, tone: "ok" },
+    runs: [
+      run("fix", "the repair", (a) => plainRows("fixed", a, "", "ok")),
+      run("clean", "green, and silent about it", (a) =>
+        plainRows("exit 0", a, "No output. The verdict is the exit code."),
+      ),
+    ],
+  },
+  {
+    title: "Re-run only what the change reaches",
+    source: after,
+    mark: null,
+    runs: [
+      run("affected-hit", "a module the test imports", (a) => plainRows("ran", a, "")),
+      run("affected-miss", "a module nothing imports", (a) => plainRows("skipped", a, "")),
+    ],
+  },
+];
+
+/* The rebuild question. The consumers are the files in the recorded project
+ * that import the module the edit is in, read out of their own text. */
+const edited = projectFile("app/greeter.iyi");
+const editedModule = /^module (\S+)/m.exec(edited.text)?.[1];
+if (!editedModule) throw new Error("agents: app/greeter.iyi declares no module");
+const consumers = record.project
+  .filter((file) => file !== edited && new RegExp(`^import ${editedModule}\\b`, "m").test(file.text))
+  .map((file) => /^module (\S+)/m.exec(file.text)?.[1] ?? file.name);
+
+const verdictOf = (answer: string) => answer.trim().split("\n").at(-1) ?? "";
+const diffs = [
+  { key: "body", label: "Change a body", frame: frame("diff-body") },
+  { key: "api", label: "Change a declaration", frame: frame("diff-api") },
+].map((d) => {
+  const moved = /interface\s+changed/.test(d.frame.answer);
+  return { ...d, moved, verdict: verdictOf(d.frame.answer), output: d.frame.answer.replace(/\n+[^\n]*\n?$/, "") };
+});
 ---
 
 <Page
-  kind="TechArticle"
-  title="For agents, and for you"
-  summary="iyi treats an agent as a first-class reader of code, beside the person writing it. AI_FIRST.md names four properties that takes, and two of them iyi holds by language rule rather than by tooling effort. Below is a recorded session: every frame a real run of the compiler's own verbs."
+  title="iyi for agents"
+  summary={`Your agent reads the interface, not the repository. The loop an agent runs against iyi, recorded: ground, check, fix, and re-run what the change reaches. ${pack.tokens_low} to ${pack.tokens_high}% fewer prompt tokens over ${pack.runs} measured runs.`}
 >
-  <section class="hero">
-    <div class="wrap">
-      <p class="label">For agents, and for you</p>
-      <h1>A language with two first-class readers.</h1>
-      <p class="lede">
-        iyi treats an agent as a reader of code beside the person writing it.
-        That is a decision in the language rather than a layer over it: the
-        rules that make a build read declarations instead of bodies are the
-        rules that let a model read an interface without the repository.
-      </p>
-      <p class="lede">
-        The design record states what that takes, and this page is the
-        recording of it working.
-      </p>
-    </div>
-  </section>
+  <div class="wrap">
+    <section class="page-hero agents-hero">
+      <div class="agents-copy">
+        <p class="eyebrow">
+          <Image src={mascot} alt="" width={20} height={19} densities={[1, 2]} loading="eager" decoding="async" />
+          Agent experience (AX)
+        </p>
+        <h1 class="h1">Your agent reads the interface, not the repository.</h1>
+        <p class="lead">
+          When it's wrong and the compiler knows the fix, the verdict carries
+          it. iyi holds this by language rule: a module compiles against what
+          its dependencies declare, so a model can read an interface without
+          the repository.
+        </p>
+      </div>
 
-  <section class="band">
-    <div class="wrap">
-      <h2>What it takes, and which of it is a rule</h2>
-      <p class="sub">
-        Four properties, in {thesis.provenance.source}'s own words. Numbers{" "}
-        {thesis.held.numbers.join(" and ")} are marked because the record says
-        iyi holds them {thesis.held.how}, and names{" "}
-        {thesis.held.rules.map((rule, i) => (
-          <>{i === 0 ? "" : i === thesis.held.rules.length - 1 ? " and " : ", "}<code>{rule}</code></>
-        ))}{" "}
-        as the rules that do it. The other two are tool surface, which is what
-        the session below exercises.
+      <AgentRace loop="#loop" hint="The recorded session ↓" />
+      <p class="small">
+        A replay of the measured result (method below). Code shown is
+        illustrative; the recorded session follows.
       </p>
-      <ol class="thesis">
+    </section>
+
+    <section class="sec" id="loop">
+      <div class="sec__head">
+        <span class="badge" title={`${provenance.command} refuses to publish a frame whose verdict moved`}>
+          <i></i>recorded with {provenance.compiler.split(" (")[0]} · {provenance.commit.slice(0, 9)}
+        </span>
+        <h2 class="h2">The loop, recorded.</h2>
+        <p class="p">
+          {record.project.length} files, one mistake, the compiler's own verbs.
+          The same verbs answer over MCP, byte for byte.
+        </p>
+      </div>
+
+      <div class="loop" id="loopbox" data-reader="person">
+        <div class="loop-tabs" role="tablist" aria-label="Steps">
+          {
+            steps.map((step, i) => (
+              <button type="button" role="tab" data-step={i} aria-selected={i === 0 ? "true" : "false"}>
+                <span class="n">0{i + 1}</span>
+                <span class="t">{step.title}</span>
+                <span class:list={["chip", step.runs[0].exit ? "chip--red" : "chip--ok"]}>exit {step.runs[0].exit}</span>
+              </button>
+            ))
+          }
+        </div>
+
         {
-          thesis.properties.map((property) => (
-            <li data-held={thesis.held.numbers.includes(property.number) ? "rule" : undefined}>
-              <h3>{property.name}</h3>
-              <p>{property.text}</p>
-              {thesis.held.numbers.includes(property.number) && (
-                <p class="held">held by rule</p>
-              )}
-            </li>
+          steps.map((step, i) => (
+            <div class="loop-step" data-step-panel={i}>
+              <h3 class="loop-step-title">
+                0{i + 1} · {step.title}
+              </h3>
+              <div class="loop-file">records/agent/{consumer.name} · {step.source.length} lines</div>
+              <div class="src">
+                {step.source.map((line, n) => (
+                  <div class:list={[step.mark && step.mark.line === n + 1 && `m-${step.mark.tone}`]}>
+                    <span>{n + 1}</span>
+                    <span class:list={[{ com: line.startsWith("#") }]}>{line || " "}</span>
+                  </div>
+                ))}
+              </div>
+              {step.runs.map((r) => (
+                <div class="run">
+                  <div class="run-head">
+                    <span class="run-cmd">
+                      <span class="faint">$ </span>
+                      {r.command}
+                      <button type="button" class="copy" data-copy={r.command} aria-label="Copy the command">
+                        Copy
+                      </button>
+                    </span>
+                    <span>
+                      <span>{r.label}</span>
+                      <span>{r.stream}</span>
+                      <span class:list={[r.exit ? "red" : "ok"]}>exit {r.exit}</span>
+                    </span>
+                  </div>
+                  <div class="run-human">
+                    {r.rows.map((row) => (
+                      <div>
+                        <span class:list={[row.tone === "error" && "red", row.tone === "ok" && "ok"]}>{row.key}</span>
+                        <span>{row.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <pre class:list={["run-raw", r.stream === "stderr" && r.raw && "red", !r.raw && "faint"]}>{r.raw.trim() || "(no output)"}</pre>
+                </div>
+              ))}
+            </div>
           ))
         }
-      </ol>
-      <p class="sub cite">{thesis.provenance.source}, &sect;{thesis.provenance.section}</p>
-    </div>
-  </section>
 
-  <section>
-    <div class="wrap">
-      <h2>The loop, recorded</h2>
-      <p class="sub">
-        An agent is handed {SPELLED[record.project.length]} modules with one
-        mistake in them and takes them to green with the compiler's own verbs.
-        Below is what those verbs answered, in the order they answered, run by{" "}
-        <code>{provenance.command}</code>. The recorder refuses to publish a
-        frame whose verdict moved, so a page that loads is a page whose session
-        still runs.
-      </p>
-      <p class="sub">
-        The file being edited, committed broken on purpose. Its dependency
-        exports two functions and keeps a third to itself, which is why nothing
-        below mentions the third.
-      </p>
-      <Sample path={consumer.path} />
-
-      <ol class="loop">
-        <li>
-          <h3>Ground the edit</h3>
-          <p>
-            Every import's exported surface as data, with its doc comments and
-            the <code>interface_hash</code> they are keyed by. No bodies, and
-            read without compiling the file, so it is available while the
-            program is still wrong.
-          </p>
-          <Frame
-            command={frame("ground").command}
-            body={frame("ground").answer}
-            stream={frame("ground").payload}
-            exitCode={frame("ground").exitCode}
-            caption="the grounding pack"
-          />
-        </li>
-
-        <li>
-          <h3>Ask for the verdict</h3>
-          <p>
-            Each error is a record, and where the compiler knows the fix it
-            carries <code>suggested_edit</code> with the exact span to replace.
-            On <code>{frame("check").payload}</code>, because an error is an
-            error whatever its format.
-          </p>
-          <Frame
-            command={frame("check").command}
-            body={frame("check").answer}
-            stream={frame("check").payload}
-            exitCode={frame("check").exitCode}
-            caption="the compiler's verdict"
-          />
-        </li>
-
-        <li>
-          <h3>Apply it, and confirm</h3>
-          <p>
-            <code>fix</code> applies the compiler's own edits and recompiles
-            after each, so no round is spent on a repair the compiler already
-            knows. The confirmation prints nothing: the verdict is the exit
-            code.
-          </p>
-          <Frame
-            command={frame("fix").command}
-            body={frame("fix").answer}
-            stream={frame("fix").payload}
-            exitCode={frame("fix").exitCode}
-            caption="the repair"
-          />
-          <Frame
-            command={frame("clean").command}
-            body={frame("clean").answer}
-            stream={frame("clean").payload}
-            exitCode={frame("clean").exitCode}
-            caption="green, and silent about it"
-          />
-        </li>
-
-        <li>
-          <h3>Re-run only what the change reaches</h3>
-          <p>
-            A test is affected exactly when the changed file is in its
-            transitive import closure, parsed rather than compiled. So the skip
-            is a fact and not an optimization that might be wrong.
-          </p>
-          <div class="two">
-            <Frame
-              command={frame("affected-hit").command}
-              body={frame("affected-hit").answer}
-              stream={frame("affected-hit").payload}
-              exitCode={frame("affected-hit").exitCode}
-              caption="a module the test imports"
-            />
-            <Frame
-              command={frame("affected-miss").command}
-              body={frame("affected-miss").answer}
-              stream={frame("affected-miss").payload}
-              exitCode={frame("affected-miss").exitCode}
-              caption="a module nothing imports"
-            />
+        <div class="loop-foot">
+          <div>
+            <div class="tabs" role="radiogroup" aria-label="Read as">
+              <span class="small read-as">Read as</span>
+              <button type="button" role="radio" data-reader="person" aria-checked="true">Person</button>
+              <button type="button" role="radio" data-reader="agent" aria-checked="false">Agent</button>
+            </div>
+            <span class="small" data-reader-note>rendered for you</span>
           </div>
-        </li>
-      </ol>
-    </div>
-  </section>
-
-  <section class="band">
-    <div class="wrap">
-      <h2>Does the edit reach anyone?</h2>
-      <p class="sub">
-        An agent working in someone else's repository needs to know whether an
-        edit affects consumers or stays internal. Two edits to the same file,
-        one artifact each, read rather than rebuilt.
-      </p>
-      <div class="two">
-        <Frame
-          command={frame("diff-body").command}
-          body={frame("diff-body").answer}
-          stream={frame("diff-body").payload}
-          exitCode={frame("diff-body").exitCode}
-          caption="a body moved"
-        />
-        <Frame
-          command={frame("diff-api").command}
-          body={frame("diff-api").answer}
-          stream={frame("diff-api").payload}
-          exitCode={frame("diff-api").exitCode}
-          caption="a declaration moved"
-        />
+          <button type="button" class="button button--ink next" data-next>Next step →</button>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <section>
-    <div class="wrap">
-      <h2>The servers are in the binary</h2>
-      <p class="sub">
-        There is nothing to install and no second implementation to keep in
-        step. <code>iyi lsp</code> speaks the Language Server Protocol to an
-        editor and <code>iyi mcp</code> serves{" "}
-        {wire.tools.map((tool, i) => (
-          <>{i === 0 ? "" : i === wire.tools.length - 1 ? " and " : ", "}<code>{tool}</code></>
-        ))}{" "}
-        as Model Context
-        Protocol tools to a harness, both over stdio, and both are shells
-        around the same front end a build uses. So there is no agent mode and
-        no forked behavior: same verb, same file, two doors.
-      </p>
-      <div class="two">
-        <div class="console">
-          <div class="console-chrome">
-            <i aria-hidden="true"></i><i aria-hidden="true"></i><i aria-hidden="true"></i>
-            <span class="caption">iyi check -f json app.iyi</span>
-          </div>
-          <pre><span class="out">{wire.shell}</span></pre>
-        </div>
-        <div class="console">
-          <div class="console-chrome">
-            <i aria-hidden="true"></i><i aria-hidden="true"></i><i aria-hidden="true"></i>
-            <span class="caption">tools/call, name: check</span>
-          </div>
-          <pre><span class="out">{wire.mcp}</span></pre>
-        </div>
+    <section class="sec split" id="servers">
+      <div class="sec__head">
+        <h2 class="h2">The servers are in the binary.</h2>
+        <p class="p">
+          There is nothing to install and no second implementation to keep in
+          step. <code>iyi lsp</code> speaks the Language Server Protocol to an
+          editor and <code>iyi mcp</code> serves{" "}
+          {record.wire.tools.map((tool, i) => (
+            <>{i === 0 ? "" : i === record.wire.tools.length - 1 ? " and " : ", "}<code>{tool}</code></>
+          ))}{" "}
+          as Model Context Protocol tools to a harness, both over stdio, and
+          both are shells around the same front end a build uses. So there is
+          no agent mode and no forked behavior: same verb, same file, two
+          doors.
+        </p>
       </div>
       <Stamped
         claim="Byte for byte the same answer through both doors."
@@ -293,200 +317,594 @@ if (!consumer) {
         subject="iyi check -f json in a shell, against the check tool over MCP stdio"
         outcome="win"
       >
-        <dl class="evidence">
-          <dt>identical</dt>
-          <dd>{String(wire.identical)}</dd>
-          <dt>bytes</dt>
-          <dd>{wire.bytes}</dd>
-        </dl>
+        <p>identical: {String(record.wire.identical)} · bytes: {record.wire.bytes}</p>
       </Stamped>
-      <p class="sub">
-        Which is why an editor that speaks LSP and a harness that speaks MCP
-        both need nothing new. Every verb either of them can reach is on the
-        command line too, and <code>iyi help</code> lists them.
-      </p>
-    </div>
-  </section>
+    </section>
 
-  <section class="band">
-    <div class="wrap">
-      <h2>What it costs</h2>
-      <p class="sub">
-        On {SPELLED[record.project.length]} modules a pack is no smaller than
-        the sources it stands in for. The saving is a property of scale, so it
-        is measured where scale exists: the repository's own{" "}
-        <Measure of="generated" />-line project of <Measure of="modules" />{" "}
-        modules, by a gate that runs both arms.
-      </p>
-      <Stamped
-        claim={`${pack.tokens_low} to ${pack.tokens_high}% fewer prompt tokens, for no fewer rounds.`}
-        band={`The pack is ${pack.size_low} to ${pack.size_high}% of the size of the sources it replaces, over ${pack.runs} measured runs.`}
-        subject={pack.subject}
-        outcome="win"
-      >
-        <p class="wire-note">
-          Rounds to green were the model's, and they were tied{" "}
-          {pack.rounds_tied} times and lost {pack.rounds_lost} times.
+    <section class="sec" id="diff">
+      <div class="sec__row">
+        <div class="sec__head">
+          <h2 class="h2">Does the edit reach anyone?</h2>
+          <p class="p">Pick an edit and see who has to rebuild.</p>
+        </div>
+        <div class="tabs diff-options" role="radiogroup" aria-label="Edit" id="diffopts">
+          {
+            diffs.map((d, i) => (
+              <button type="button" role="radio" data-edit={d.key} aria-checked={i === 0 ? "true" : "false"}>
+                {d.label}
+              </button>
+            ))
+          }
+        </div>
+      </div>
+      <div id="diffbox">
+        {
+          diffs.map((d) => (
+            <div class="diff-panel" data-edit-panel={d.key}>
+              <h3 class="diff-title">{d.label}</h3>
+              <div class="diff">
+                <div class="diff-code">
+                  <div class="loop-file split-file">
+                    <span>$ {d.frame.command}</span>
+                  </div>
+                  <pre class="diff-out">{d.output}</pre>
+                </div>
+                <div class="diff-consumers">
+                  <div class="loop-file">imports {editedModule}</div>
+                  {consumers.map((name) => (
+                    <div>
+                      <span>{name}</span>
+                      <span class:list={["chip", d.moved ? "chip--warn" : "chip--ok"]}>
+                        {d.moved ? "rebuild" : "up to date"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div class:list={["verdict", d.moved ? "verdict--warn" : "verdict--ok"]}>
+                <b>{d.verdict}</b>
+                <span class="mono">iyi mod diff · interface {d.moved ? "changed" : "unchanged"}</span>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="sec split">
+      <div class="sec__head">
+        <h2 class="h2">How the numbers were measured.</h2>
+        <p class="p">
+          On {SPELLED[record.project.length]} modules a pack is no smaller than
+          the sources it stands in for. So the gate that runs both arms
+          measures it on {SPELLED[measuredOn.length]} of the repository's
+          samples whose imports carry bodies:{" "}
+          {measuredOn.map((target, i) => (
+            <>
+              {i > 0 && (i === measuredOn.length - 1 ? ", and " : ", ")}
+              <code>{target.file}</code>, against {target.imports}
+            </>
+          ))}. The prompt tokens are from the <code>{taskFile}</code> task,
+          written once against the pack and once against the sources.
         </p>
-      </Stamped>
-      <p class="sub run-it">
-        The project is <code>records/agent/</code> in this site's repository and
-        the commands are the ones above.{" "}
-        <a href={`${base}install/`}>Install the compiler</a> and the frames on
-        this page are what you will see.
-      </p>
-    </div>
-  </section>
+        <p class="p note">
+          The project is <code>records/agent/</code> in this site's
+          repository. <a href={`${base}install/`}>Install the compiler</a> and
+          the frames on this page are what you will see.
+        </p>
+      </div>
+      <div class="card receipt">
+        <div class="receipt-head">
+          <span>{facts.provenance.generator}</span>
+          <span>{facts.provenance.commit}</span>
+        </div>
+        <dl>
+          <div><dt>samples</dt><dd>{measuredOn.map((target) => target.file).join(" · ")}</dd></div>
+          <div><dt>token task</dt><dd>{taskFile}</dd></div>
+          <div><dt>runs</dt><dd>{pack.runs}</dd></div>
+          <div><dt>arm A</dt><dd>sources</dd></div>
+          <div><dt>arm B</dt><dd>iyi mod context</dd></div>
+          <div><dt>pack size</dt><dd>{pack.size_low}–{pack.size_high}% of sources</dd></div>
+          <div><dt>rounds to green (the model's)</dt><dd>tied {pack.rounds_tied} · lost {pack.rounds_lost}</dd></div>
+        </dl>
+        <div class="receipt-foot">
+          <span>prompt tokens</span>
+          <b>−{pack.tokens_low} to −{pack.tokens_high}%</b>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    import { wireAgentsPage } from "../lib/agents-page";
+    import { wireCopyButtons } from "../lib/copy";
+    wireAgentsPage();
+    wireCopyButtons();
+  </script>
 
   <style>
-    section {
-      padding-block: clamp(2.5rem, 5vw, 4.5rem);
+    .agents-hero {
+      max-width: none;
     }
 
-    section h2 {
-      font-size: var(--step-3);
-      margin-block-end: 0.6rem;
+    .agents-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-width: 760px;
     }
 
-    section h3 {
-      font-size: var(--step-1);
-      margin-block: 0 0.4rem;
+    .agents-copy .h1 {
+      font-size: clamp(34px, 4.4vw, 54px);
     }
 
-    .band {
-      background: var(--raise);
-      border-block: var(--hair) solid var(--hairline);
+    .agents-hero :global(.race) {
+      margin-top: clamp(16px, 3vw, 32px);
     }
 
-    .label {
+    /* The loop ---------------------------------------------------------- */
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      padding: 5px 12px 5px 8px;
+      border-radius: 999px;
+      border: var(--hair) solid var(--boundary);
+      background: var(--card);
       font-family: var(--font-mono);
-      font-size: var(--step--2);
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--brand-deep);
-      margin-block-end: 0.6rem;
-    }
-
-    .sub {
+      font-size: 12px;
       color: var(--graphite);
-      max-width: 68ch;
-      margin-block-end: 1.4rem;
-      font-size: var(--step-0);
     }
 
-    .hero h1 {
-      font-size: var(--step-4);
-      max-width: 34ch;
-      margin-block-end: 1rem;
+    .badge i {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--ok);
     }
 
-    .hero .lede {
-      font-size: var(--step-1);
-      color: var(--graphite);
-      max-width: 62ch;
-    }
-
-    /* The four properties, numbered by the record rather than by the list, so
-     * the numbers on the page are the numbers the sentence below them cites.
-     * The two held by rule carry the accent edge; the other two do not, which
-     * is the page saying which half is a language and which half is tooling. */
-    .thesis {
-      list-style: none;
-      margin: 0 0 1.4rem;
-      padding: 0;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
-      gap: 1rem;
-      counter-reset: property;
-    }
-
-    .thesis > li {
-      counter-increment: property;
-      padding: 1.1rem 1.2rem;
-      border: var(--hair) solid var(--hairline);
-      border-radius: var(--radius);
-      background: var(--paper);
-    }
-
-    .thesis > li[data-held="rule"] {
-      border-color: var(--brand);
-    }
-
-    .thesis h3::before {
-      content: counter(property) ". ";
-      color: var(--mute);
-      font-family: var(--font-mono);
-      font-weight: 400;
-    }
-
-    .thesis p {
-      color: var(--graphite);
-      font-size: var(--step--1);
-      margin: 0;
-    }
-
-    .thesis .held {
-      font-family: var(--font-mono);
-      font-size: var(--step--2);
-      color: var(--brand-deep);
-      margin-block-start: 0.6rem;
-    }
-
-    .cite {
-      font-family: var(--font-mono);
-      font-size: var(--step--2);
-      color: var(--mute);
-      margin-block-end: 0;
-    }
-
-    /* The loop, numbered, because the order is the argument. The marker is
-     * the step and the heading is what the step does, so a reader skimming the
-     * numbers gets the shape before any output. */
     .loop {
-      list-style: none;
-      counter-reset: step;
-      margin: 2rem 0 0;
-      padding: 0;
-      display: grid;
-      gap: 2.5rem;
+      border-radius: var(--radius-lg);
+      border: var(--hair) solid var(--hairline);
+      background: var(--code);
+      overflow: hidden;
+      scroll-margin-top: 80px;
     }
 
-    .loop > li {
-      counter-increment: step;
-      display: grid;
-      gap: 0.4rem;
+    .loop-tabs {
+      display: none;
+      overflow-x: auto;
+      scrollbar-width: none;
+      border-bottom: var(--hair) solid var(--hairline);
+      background: var(--card);
     }
 
-    .loop > li > h3::before {
-      content: counter(step) ". ";
-      color: var(--mute);
+    .loop-tabs button {
+      appearance: none;
+      border: 0;
+      border-right: var(--hair) solid var(--hairline);
+      background: none;
+      cursor: pointer;
+      flex: 1 1 0;
+      min-width: 190px;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 6px 10px;
+      align-content: start;
+      padding: 14px 16px;
+      text-align: left;
+      font: inherit;
+      color: var(--ink);
+    }
+
+    .loop-tabs button:hover {
+      background: var(--raise);
+    }
+
+    .loop-tabs button[aria-selected="true"] {
+      background: var(--raise);
+      box-shadow: inset 0 -2px 0 var(--brand);
+    }
+
+    .loop-tabs .n {
       font-family: var(--font-mono);
-      font-weight: 400;
+      font-size: 13px;
+      color: var(--mute);
+      padding-top: 2px;
     }
 
-    .loop p {
-      color: var(--graphite);
-      max-width: 68ch;
-      font-size: var(--step--1);
-      margin-block-end: 0.8rem;
+    .loop-tabs [aria-selected="true"] .n {
+      color: var(--brand-deep);
     }
 
-    .two {
+    .loop-tabs .t {
+      font-weight: 650;
+      font-size: 15.5px;
+    }
+
+    .loop-tabs .chip {
+      grid-column: 2;
+    }
+
+    /* On a phone the four steps sit two by two rather than scrolling
+     * sideways out of sight. */
+    @media (max-width: 640px) {
+      #loopbox[data-js="true"] .loop-tabs {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .loop-tabs button {
+        min-width: 0;
+        border-bottom: var(--hair) solid var(--hairline);
+      }
+    }
+
+    .run-cmd {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .run-cmd .copy {
+      margin-inline-start: 4px;
+    }
+
+    /* With the script, one step at a time behind tabs; without it, the four
+     * steps one after another, each under its own title. */
+    .loop[data-js="true"] .loop-tabs {
+      display: flex;
+    }
+
+    .loop-step-title {
+      margin: 0;
+      padding: 14px 18px;
+      border-bottom: var(--hair) solid var(--hairline);
+      background: var(--card);
+      font-size: 15.5px;
+    }
+
+    .loop[data-js="true"] .loop-step-title {
+      display: none;
+    }
+
+    .loop-step + .loop-step {
+      border-top: var(--hair) solid var(--hairline);
+    }
+
+    .loop[data-js="true"] .loop-step + .loop-step {
+      border-top: 0;
+    }
+
+    .loop-file {
+      padding: 12px 18px;
+      border-bottom: var(--hair) solid var(--hairline);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--mute);
+    }
+
+    .src {
+      margin: 0;
+      padding: 12px 0;
+      font: 12.5px/1.7 var(--font-mono);
+      border-bottom: var(--hair) solid var(--hairline);
+    }
+
+    .src div {
+      display: flex;
+      padding: 0 18px;
+    }
+
+    .src div span:first-child {
+      width: 24px;
+      flex: none;
+      color: var(--mute);
+      user-select: none;
+    }
+
+    .src div span:last-child {
+      white-space: pre-wrap;
+      font-variant-ligatures: none;
+      word-break: break-word;
+      min-width: 0;
+    }
+
+    .src .com {
+      color: var(--mute);
+    }
+
+    .src .m-err {
+      background: var(--brand-soft);
+      box-shadow: inset 2px 0 0 var(--brand);
+    }
+
+    .src .m-ok {
+      background: var(--ok-soft);
+      box-shadow: inset 2px 0 0 var(--ok);
+    }
+
+    .src .m-warn {
+      background: var(--warn-soft);
+      box-shadow: inset 2px 0 0 var(--warn);
+    }
+
+    .run {
+      border-bottom: var(--hair) solid var(--hairline);
+    }
+
+    .run-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 18px 0;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      flex-wrap: wrap;
+    }
+
+    .run-head > span:last-child {
+      display: flex;
+      gap: 12px;
+      font-size: 11.5px;
+      color: var(--mute);
+    }
+
+    .run-human {
+      padding: 12px 18px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .run-human div {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
-      gap: 1.25rem;
+      grid-template-columns: minmax(80px, auto) minmax(0, 1fr);
+      gap: 4px 14px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: var(--card);
+      border: var(--hair) solid var(--hairline);
     }
 
-    .wire-note {
+    .run-human div span:first-child {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--mute);
+    }
+
+    .run-human div span.red {
+      color: var(--brand-deep);
+    }
+
+    .run-human div span.ok {
+      color: var(--ok);
+    }
+
+    .run-human div span:last-child {
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .run-raw {
+      margin: 0;
+      padding: 8px 18px 16px;
+      font: 12px/1.65 var(--font-mono);
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: var(--ink);
+    }
+
+    /* Both readings are in the page; the reader switch picks one. Without the
+     * script there is no switch, so the person's reading shows and the raw
+     * bytes follow it. */
+    .loop[data-js="true"][data-reader="person"] .run-raw,
+    .loop[data-js="true"][data-reader="agent"] .run-human {
+      display: none;
+    }
+
+    .loop-foot {
+      padding: 12px 18px;
+      display: none;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .loop[data-js="true"] .loop-foot {
+      display: flex;
+    }
+
+    .loop-foot > div {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .loop-foot .tabs {
+      padding: 3px;
+    }
+
+    .loop-foot .tabs button {
+      padding: 6px 11px;
+      font-size: 13px;
+    }
+
+    .read-as {
+      padding: 0 8px 0 6px;
+      align-self: center;
+    }
+
+    .next {
+      height: 34px;
+      font-size: 13.5px;
+    }
+
+    /* The rebuild question ---------------------------------------------- */
+
+    .diff-options {
+      display: none;
+    }
+
+    .diff-options[data-js="true"] {
+      display: flex;
+    }
+
+    .diff-title {
+      margin: 0 0 12px;
+      font-size: 17px;
+    }
+
+    #diffbox[data-js="true"] .diff-title {
+      display: none;
+    }
+
+    .diff-panel + .diff-panel {
+      margin-top: 32px;
+    }
+
+    #diffbox[data-js="true"] .diff-panel + .diff-panel {
+      margin-top: 0;
+    }
+
+    .diff {
+      display: flex;
+      flex-wrap: wrap;
+      border-radius: var(--radius-lg);
+      border: var(--hair) solid var(--hairline);
+      background: var(--card);
+      overflow: hidden;
+    }
+
+    .diff-code {
+      flex: 1 1 340px;
+      min-width: 0;
+      border-right: var(--hair) solid var(--hairline);
+      background: var(--code);
+    }
+
+    .diff-out {
+      margin: 0;
+      padding: 12px 18px;
+      font: 12.5px/1.75 var(--font-mono);
+      white-space: pre;
+      overflow-x: auto;
+    }
+
+    .diff-consumers {
+      flex: 1 1 260px;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .diff-consumers > div:not(.loop-file) {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 18px;
+      border-bottom: var(--hair) solid var(--hairline);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+
+    .verdict {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 16px 20px;
+      border-radius: 14px;
+      border: var(--hair) solid;
+      margin-top: 12px;
+    }
+
+    .verdict--ok {
+      border-color: var(--ok);
+      background: var(--ok-soft);
+    }
+
+    .verdict--warn {
+      border-color: var(--warn);
+      background: var(--warn-soft);
+    }
+
+    .verdict b {
+      font-weight: 700;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .verdict .mono {
+      margin-left: auto;
+      font-size: 12px;
       color: var(--graphite);
-      font-size: var(--step--1);
-      max-width: 62ch;
-      margin-block: 0 0.8rem;
     }
 
-    .run-it {
-      margin-block-start: 1.6rem;
-      margin-block-end: 0;
+    /* The receipt ------------------------------------------------------- */
+
+    .note {
+      font-size: 14px;
+    }
+
+    .receipt {
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+
+    .receipt-head,
+    .receipt-foot {
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+    }
+
+    .receipt-head {
+      border-bottom: 1px dashed var(--boundary);
+      color: var(--mute);
+    }
+
+    .receipt-foot {
+      border-top: 1px dashed var(--boundary);
+    }
+
+    .receipt-foot span {
+      font: 600 15px var(--font-sans);
+    }
+
+    .receipt-foot b {
+      font: 750 26px var(--font-sans);
+      letter-spacing: -0.03em;
+      color: var(--ok);
+    }
+
+    .receipt dl {
+      margin: 0;
+      padding: 6px 18px;
+    }
+
+    .receipt dl div {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 0;
+    }
+
+    .receipt dt {
+      color: var(--graphite);
+    }
+
+    .receipt dd {
+      margin: 0;
+      text-align: right;
     }
   </style>
 </Page>

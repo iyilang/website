@@ -41,6 +41,7 @@
  * `src/lib/highlight.ts` instead. A site arguing that a program should link
  * only what it uses does not get to ship either one.
  */
+import { recordedText } from "../lib/highlight";
 import manifest from "../../records/wasm/manifest.json";
 import toc from "../../samples/tour/tour.json";
 
@@ -279,3 +280,12 @@ export function sampleNote(pathOrId: string): string | null {
   return findSample(pathOrId)?.note ?? null;
 }
 
+/**
+ * What a program says it is: the first line of its own leading comment,
+ * without the `#` and without a closing full stop, so a caller adds the
+ * punctuation its sentence needs. Read out of the recording, so the
+ * description cannot drift from the file. Markdown, as written in the source.
+ */
+export function blurbOf(path: string): string {
+  return recordedText(path).split("\n")[0].replace(/^#\s*/, "").replace(/\.$/, "");
+}

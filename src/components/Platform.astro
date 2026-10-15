@@ -77,49 +77,22 @@ const faces = [
 </script>
 
 <style>
-  /* Until a script runs, there is no switch and no hidden half: both panels
-   * stand, in source order, and the buttons are not drawn at all. */
+  /* The tabs are the shared `.tabs` from site.css. They are offered only once
+   * the script has claimed the switch; without it both panels are simply on
+   * the page, one under the other. */
   .tabs {
     display: none;
-    gap: 0.4rem;
-    margin-block-end: 0.75rem;
-    flex-wrap: wrap;
   }
 
   .platform[data-js="true"] .tabs {
     display: flex;
   }
 
-  .tab {
-    font-family: var(--font-sans);
-    font-size: var(--step--1);
-    font-weight: 600;
-    color: var(--graphite);
-    background: var(--paper);
-    border: var(--hair) solid var(--boundary);
-    border-radius: 6px;
-    padding: 0.3rem 0.8rem;
-    cursor: pointer;
+  .platform[data-js="true"] .panel {
+    margin-top: 12px;
   }
 
-  .tab:hover {
-    color: var(--ink);
-    border-color: var(--graphite);
-  }
-
-  .tab[aria-selected="true"] {
-    color: var(--paper);
-    background: var(--ink);
-    border-color: var(--ink);
-  }
-
-  /* Both panels are in the flow without a script, so they need the spacing a
-   * pair of blocks needs; with one, only ever one is displayed. */
   .panel + .panel {
-    margin-block-start: 1rem;
-  }
-
-  .platform[data-js="true"] .panel + .panel {
-    margin-block-start: 0;
+    margin-top: 12px;
   }
 </style>

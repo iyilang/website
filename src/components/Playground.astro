@@ -47,7 +47,8 @@ import { activeEngine } from "../playground/registry";
 import type { Capability } from "../playground/types";
 import type { TourStep } from "../playground/samples";
 import type { SampleEntry } from "../playground/entry";
-import { runnable, tourSamples, tourSections } from "../playground/samples";
+import { blurbOf, runnable, tourSamples, tourSections } from "../playground/samples";
+import { inlineMarkdown } from "../lib/lessons";
 import { markListing } from "../playground/render";
 import { highlightedLines, recordedText } from "../lib/highlight";
 
@@ -91,7 +92,7 @@ const inkLines =
 /* Every sample opens with a comment saying what it is. That line is the page's
  * one sentence about the program, so the description cannot drift from the
  * file. */
-const blurb = source.split("\n")[0].replace(/^#\s*/, "").replace(/\.$/, "");
+const blurb = blurbOf(sample.path);
 
 /* The HTML parser drops one newline immediately after a `<pre>` open tag.
  * Every sample begins with a comment, so this costs nothing today; it is here
@@ -120,182 +121,183 @@ const section = tourSections.find((s) => s.steps.some((step) => step.id === samp
 const step = at >= 0 ? `${at + 1} of ${tourSamples.length}` : null;
 ---
 
-<section class="bench wrap" aria-label="Run a recorded program">
-  <div class="bench-head">
-    <div class="bench-title">
-      <p class="label">
+<div class="wrap pg">
+
+  <section class="bench" aria-label="Run a recorded program">
+    <div class="pg-title">
+      <p class="small">
         <a href={`${base}playground/`}>Playground</a>
-        {section && `, ${section.title}`}{step && `, ${step}`}
+        {section && ` · ${section.title}`}{step && ` · ${step}`}
       </p>
-      <h1>{sample.set === "tour" ? sample.id : sample.path}</h1>
-      <p class="pitch">{blurb}.</p>
+      <h1 class="h1">
+        {
+          sample.set === "tour"
+            ? sample.id
+            : sample.path.split("/").map((part, i, all) => (
+                <>{part}{i < all.length - 1 && <>/<wbr /></>}</>
+              ))
+        }
+      </h1>
+      <p class="lead" set:html={`${inlineMarkdown(blurb)}.`} />
     </div>
 
-    <div class="bar" data-entry={JSON.stringify(entry)}>
-      {
-        runs && (
-          <Fragment>
-            <button
-              type="button"
-              class="cta run"
-              data-control="run"
-              data-label="Run"
-              data-label-edited="Run the recorded module"
-            >
-              <span data-role="run-label">Run</span> <span class="chord">Ctrl + Enter</span>
-            </button>
-            {/* Only while a run is in flight, and only on a page that has
-                one: a page with no Run has nothing to stop. */}
-            <button type="button" class="cta ghost" data-role="cancel" hidden={true}>
-              Stop
-            </button>
-          </Fragment>
-        )
-      }
-
-      {/* The program travels in the fragment, which is the one part of a URL
-          a browser never sends anywhere: sharing a program from this page
-          puts it in the link and not on a server. The codec is
-          src/playground/share.ts and the ceiling is its own constant. */}
-      <button
-        type="button"
-        class="cta ghost"
-        data-role="share"
-        data-label="Share"
-      >
-        Share
-      </button>
-
-      {/* Only once there is something to restore. A control that undoes
-          nothing is a control that does nothing. */}
-      <button type="button" class="cta ghost" data-role="reset" hidden={true}>
-        Restore
-      </button>
-
-      {/* Links, not a select. Each sample is a real URL that resolves before
-          any script runs, so a lesson's deep link works with scripts off and
-          survives being bookmarked. */}
-      <details class="menu">
-        <summary class="cta ghost">Contents</summary>
-        <div class="menu-body">
-          {
-            tourSections.map((group) => (
-              <Fragment>
-                <p class="menu-title">{group.title}</p>
-                <ul>
-                  {group.steps.map((entry) => (
-                    <li>
-                      <a
-                        href={hrefOf(entry.id)}
-                        class="pick"
-                        aria-current={entry.id === sample.id ? "page" : undefined}
-                      >
-                        {entry.id}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </Fragment>
-            ))
-          }
-        </div>
-      </details>
-    </div>
-  </div>
-
-  {/* Listing first in source order, which is also the order the panes stack
-      in below the breakpoint, so the program is what a narrow screen shows
-      first. */}
-  <div class="panes">
-    <figure class="source pane-listing">
-      <figcaption class="source-head">
-        <span class="path">{sample.path}</span>
-        <span>{runnable(sample) ? sample.wasm : "native only"}</span>
+    <div class="pg-card">
+      {/* The file and the controls first, so Run is where the eye starts on
+          any length of program; then the program and what it printed side by
+          side on a wide screen, the way a reader compares them. */}
+      <div class="source-head">
+        <span class="path">
+          {sample.path} · {runnable(sample) ? `${sample.wasm} · ${Math.round(sample.bytes / 1024)} KB` : "native only"}
+        </span>
         <button type="button" class="copy" data-copy={source} aria-label="Copy the program">
           Copy
         </button>
-      </figcaption>
-      <pre
-        class="listing"
-        style={`--lines: ${lineCount}`}
-        contenteditable="plaintext-only"
-        spellcheck="false"
-        role="textbox"
-        aria-multiline="true"
-        tabindex="0"
-        aria-label={`iyi source, ${sample.path}, editable`}
-        data-role="pane"
-        set:html={seedInk}
-      />
-    </figure>
-
-    <div class="console pane-output" data-role="output">
-      <div class="console-chrome">
-        <i aria-hidden="true"></i><i aria-hidden="true"></i><i
-          aria-hidden="true"></i>
-        <span class="caption">{runs ? "output" : "recorded output"}</span>
       </div>
-      {
-        runs ? (
-          <pre class="out idle">Press Run.</pre>
-        ) : (
-          <Fragment>
-            <pre class="out">{sample.nativeStdout}</pre>
-            <pre class="stamp">exit {sample.exitCode}, on {entry.recorded.machine}</pre>
-          </Fragment>
-        )
-      }
+
+      <div class="bar" data-entry={JSON.stringify(entry)}>
+        <div class="bar-actions">
+          {
+            runs && (
+              <Fragment>
+                <button
+                  type="button"
+                  class="button run"
+                  data-control="run"
+                  data-label="Run"
+                  data-label-edited="Run the recorded module"
+                >
+                  <svg viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 1.2v7.6L8.6 5z" /></svg>
+                  <span data-role="run-label">Run</span> <span class="chord">Ctrl + Enter</span>
+                </button>
+                <button type="button" class="button button--ghost" data-role="cancel" hidden={true}>
+                  Stop
+                </button>
+              </Fragment>
+            )
+          }
+          {/* The program travels in the fragment, which is the one part of a
+              URL a browser never sends anywhere. */}
+          <button type="button" class="button button--ghost" data-role="share" data-label="Share">
+            Share
+          </button>
+          <button type="button" class="button button--ghost" data-role="reset" hidden={true}>
+            Restore
+          </button>
+        </div>
+      </div>
+
+      <div class="panes">
+        <figure class="source pane-listing" aria-label={sample.path}>
+          <pre
+            class="listing"
+            style={`--lines: ${lineCount}`}
+            contenteditable="plaintext-only"
+            spellcheck="false"
+            role="textbox"
+            aria-multiline="true"
+            tabindex="0"
+            aria-label={`iyi source, ${sample.path}, editable`}
+            data-role="pane"
+            set:html={seedInk}
+          />
+        </figure>
+
+        <div class="console pane-output" data-role="output">
+          <div class="console-chrome">
+            <span class="caption">{runs ? "output" : "recorded output"}</span>
+          </div>
+          {
+            runs ? (
+              <pre class="out idle">Press Run.</pre>
+            ) : (
+              <Fragment>
+                <pre class="out">{sample.nativeStdout}</pre>
+                <pre class="stamp">exit {sample.exitCode}, on {entry.recorded.machine}</pre>
+              </Fragment>
+            )
+          }
+        </div>
+      </div>
+
+      {/* The same line for the same page once the pane stops holding the file
+          the record is about. The island only swaps which line is hidden. */}
+      <p class="notice" data-role="foot-edited" hidden>
+        {
+          runnable(sample) && supports("run")
+            ? `The pane no longer holds ${sample.path}. Run executes ${sample.wasm}, the module the compiler built from the recorded file, so your edit is not in this run: there is no iyi compiler in this page.`
+            : `The pane no longer holds ${sample.path}. What the output pane shows is the recorded run of the recorded file, not of what you typed.`
+        }{" "}
+        <a href={`${base}playground/evidence/`}>How this works</a>
+      </p>
     </div>
-  </div>
-  <p class="foot" data-role="foot-recorded">
-    {
-      runnable(sample)
-        ? supports("run")
-          ? `Run executes ${sample.wasm}, the module the compiler built from this file, in your browser.`
-          : "The active engine cannot run, so nothing here executes."
-        : `${sample.reason} What you see is what the program printed when the compiler ran it natively.`
-    }{" "}
-    <a href={`${base}playground/evidence/`}>How this works</a>
-  </p>
 
-  {/* The same line for the same page once the pane stops holding the file the
-      record is about. Written here rather than assembled in the browser: it is
-      copy, it belongs where the rest of the copy is, and the island only
-      swaps which of the two is hidden. */}
-  <p class="foot" data-role="foot-edited" hidden>
-    {
-      runnable(sample) && supports("run")
-        ? `The pane no longer holds ${sample.path}. Run executes ${sample.wasm}, the module the compiler built from the recorded file, so your edit is not in this run: there is no iyi compiler in this page.`
-        : `The pane no longer holds ${sample.path}. What the output pane shows is the recorded run of the recorded file, not of what you typed.`
-    }{" "}
-    <a href={`${base}playground/evidence/`}>How this works</a>
-  </p>
-
-  <div class="local">
-    <p class="foot">
-      <strong>Try it on your machine.</strong> Copy the program into{" "}
-      <code>{basename}</code>, change something, and run it. You can type in the
-      pane above as well, and the page will say so the moment what is in it
-      stops being this file, but only a compiler on your own machine can run
-      what you wrote.
+    <p class="small stamp-line">
+      recorded with {entry.recorded.compiler} · {entry.recorded.machine} · {entry.recorded.when.slice(0, 10)}
     </p>
-    <div class="console local-run">
-      <div class="console-chrome">
-        <i aria-hidden="true"></i><i aria-hidden="true"></i><i aria-hidden="true"></i>
-        <span class="caption">in a shell, after <a href={`${base}install/`}>installing</a></span>
-        <button type="button" class="copy" data-copy={`iyi run ${basename}`} aria-label="Copy the command">
-          Copy
-        </button>
-      </div>
-      <pre><span class="prompt">$ </span><span class="cmd">iyi run {basename}</span></pre>
-    </div>
-  </div>
 
-  <nav class="tour" aria-label="Samples">
-    {prev ? <a href={hrefOf(prev.id)}>&larr; {prev.id}</a> : <span />}
-    {next ? <a href={hrefOf(next.id)}>{next.id} &rarr;</a> : <span />}
+    <p class="small honest">
+      {
+        runs
+          ? "You can type in the pane: nothing here compiles, so what you type cannot run, and the page says which bytes it is running the moment the text stops being the recorded file. There is no standard input, no filesystem and no threads on this target, and one sample fails on purpose for exactly that reason."
+          : "This program does not compile for the browser's target, so this page shows what it printed when the compiler ran it natively, on the machine named above. You can still type in the pane, and the page will say when what is in it is no longer the file the recording is about."
+      }
+    </p>
+
+    <p class="small foot" data-role="foot-recorded">
+      {
+        runnable(sample)
+          ? supports("run")
+            ? `Run executes ${sample.wasm}, the module the compiler built from this file, in your browser.`
+            : "The active engine cannot run, so nothing here executes."
+          : `${sample.reason} What you see is what the program printed when the compiler ran it natively.`
+      }{" "}
+      <a href={`${base}playground/evidence/`}>How this works</a>
+    </p>
+
+    <div class="split local">
+      <div class="sec__head">
+        <h2 class="h3">Try it on your machine</h2>
+        <p class="p">
+          Copy the program into <code>{basename}</code>, change something, and
+          run it. Only a compiler on your own machine can run what you wrote.
+        </p>
+      </div>
+      <div class="console">
+        <div class="console-chrome">
+          <span class="caption">sh, after <a href={`${base}install/`}>installing</a></span>
+          <button type="button" class="copy" data-copy={`iyi run ${basename}`} aria-label="Copy the command">
+            Copy
+          </button>
+        </div>
+        <pre><span class="prompt">$ </span><span class="cmd">iyi run {basename}</span></pre>
+      </div>
+    </div>
+
+    <nav class="pager" aria-label="Samples">
+      {prev ? <a class="button button--ghost" href={hrefOf(prev.id)}>← {prev.id}</a> : <span />}
+      {next ? <a class="button button--ghost" href={hrefOf(next.id)}>Next: {next.id} →</a> : <span />}
+    </nav>
+  </section>
+
+  {/* After the bench in the source, so a keyboard reaches Run before the
+      thirty-odd links of the tour; drawn first by the grid. The whole tour, as links rather than a select: each sample is a real
+      URL that resolves before any script runs, so a lesson's deep link works
+      with scripts off and survives being bookmarked. */}
+  <nav class="pg-side" aria-label="Tour">
+    {
+      tourSections.map((group) => (
+        <div>
+          <b>{group.title}</b>
+          {group.steps.map((item) => (
+            <a href={hrefOf(item.id)} aria-current={item.id === sample.id ? "page" : undefined}>
+              {item.id}
+            </a>
+          ))}
+        </div>
+      ))
+    }
   </nav>
-</section>
+</div>
 
 <script>
   /**
@@ -735,218 +737,244 @@ const step = at >= 0 ? `${at + 1} of ${tourSamples.length}` : null;
   })();
 </script>
 
+
+<script>
+  /* Where the program and its output are stacked, a run can print below the
+   * fold. When the output changes and none of it is on screen, bring it into
+   * view; where it sits beside the program this never fires. Smooth or not is
+   * the page's own scroll behaviour, which reduced motion already turns off. */
+  const output = document.querySelector<HTMLElement>('[data-role="output"]');
+  if (output) {
+    new MutationObserver(() => {
+      const box = output.getBoundingClientRect();
+      if (box.top >= innerHeight || box.bottom <= 0) output.scrollIntoView({ block: "nearest" });
+    }).observe(output, { childList: true, subtree: true, characterData: true });
+  }
+</script>
+
+<script>
+  /* The tour list scrolls: sideways as a strip on a phone, down as a column
+   * beside the bench on a wide screen. Either way it opens with the current
+   * program in the middle of it, not wherever the list happens to start, so
+   * the reader sees where they are. Only the list scrolls, never the page. */
+  const side = document.querySelector<HTMLElement>(".pg-side");
+  const here = side?.querySelector<HTMLElement>('[aria-current="page"]');
+  if (side && here) {
+    const centre = () => {
+      const box = side.getBoundingClientRect();
+      const at = here.getBoundingClientRect();
+      if (side.scrollWidth > side.clientWidth) {
+        side.scrollLeft += at.left - box.left - (side.clientWidth - at.width) / 2;
+      }
+      if (side.scrollHeight > side.clientHeight) {
+        side.scrollTop += at.top - box.top - (side.clientHeight - at.height) / 2;
+      }
+    };
+    centre();
+  }
+</script>
 <style>
-  .bench {
-    margin-block: 2rem 3rem;
+  /* The tour down the side and the program beside it. Below the breakpoint the
+   * side becomes a row of chips that scrolls, above the program. */
+  .pg {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: clamp(24px, 4vw, 48px);
+    align-items: start;
+    padding-top: clamp(32px, 5vw, 56px);
   }
 
-  .bench-head {
+  .pg-side {
+    grid-column: 1;
+    grid-row: 1;
+    position: sticky;
+    top: 80px;
+    /* Short enough to end inside the screen where it starts, under the
+     * masthead and the page's top padding, not only once it has stuck. */
+    max-height: calc(100vh - 136px);
+    overflow: auto;
+    font-size: 14px;
     display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 1rem 2rem;
-    margin-block-end: 1.25rem;
+    flex-direction: column;
+    gap: 14px;
+    padding-right: 6px;
   }
 
-  .bench-title h1 {
-    font-family: var(--font-mono);
-    font-size: var(--step-2);
-    margin: 0.2rem 0 0.3rem;
-  }
-
-  .bench-title .label a {
-    color: inherit;
-  }
-
-  .pitch {
-    margin: 0;
-    max-width: var(--measure);
-    color: var(--graphite);
-  }
-
-  .bar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.6rem;
-    position: relative;
-  }
-
-  .bar .cta {
-    padding: 0.55rem 1rem;
-    font-size: var(--step--1);
-    cursor: pointer;
-  }
-
-  .bar .cta[hidden] {
-    display: none;
-  }
-
-  .bar .run:disabled {
-    cursor: not-allowed;
-    background: var(--track);
-    color: var(--mute);
-  }
-
-  .chord {
-    font-weight: 400;
-    font-size: var(--step--2);
-    opacity: 0.8;
-  }
-
-  /* A keyboard chord means nothing to a thumb. */
-  @media (hover: none), (max-width: 40rem) {
-    .chord {
-      display: none;
-    }
-  }
-
-  /* The sample menu. A disclosure holding real links, so it needs no script and
-   * a deep link into it is a URL rather than a state. */
-  .menu {
-    position: relative;
-  }
-
-  .menu summary {
-    list-style: none;
-  }
-
-  .menu summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .menu summary::after {
-    content: "";
-    display: inline-block;
-    border: 0.3em solid transparent;
-    border-top-color: currentColor;
-    transform: translateY(0.2em);
-  }
-
-  .menu-body {
-    position: absolute;
-    z-index: 2;
-    inset-inline-end: 0;
-    inset-block-start: calc(100% + 0.4rem);
-    min-width: 16rem;
-    max-height: min(70vh, 32rem);
-    overflow-y: auto;
-    padding: 0.4rem;
-    background: var(--paper);
-    /* The popover is a control surface rather than a boundary between two
-     * areas, so its edge is the token that clears WCAG 1.4.11 against paper
-     * and raise in both schemes. The drop shadow that used to lift it off the
-     * page is gone: doc/ART-DIRECTION.md says there are no shadows here, and
-     * the one that was here was a hard-coded black that would have read as a
-     * smear on a dark ground. */
-    border: var(--hair) solid var(--boundary);
-    border-radius: var(--radius);
-    text-align: left;
-  }
-
-  .menu-body ul {
-    list-style: none;
-    margin: 0 0 0.4rem;
-    padding: 0;
-  }
-
-  /* On a phone the list hangs off the whole bar rather than off its button,
-   * so it cannot open past the edge of the screen. */
-  @media (max-width: 40rem) {
-    .menu {
-      position: static;
-    }
-
-    .menu-body {
-      inset-inline: 0;
-      max-height: min(60vh, 28rem);
-    }
-  }
-
-  .menu-title {
-    margin: 0.5rem 0 0.15rem;
-    padding-inline: 0.7rem;
-    font-size: var(--step--2);
+  .pg-side b {
+    display: block;
+    font-size: 12px;
     font-weight: 600;
     color: var(--mute);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+    margin-bottom: 4px;
   }
 
-  .pick {
+  .pg-side a {
     display: block;
-    padding: 0.35rem 0.7rem;
-    border-radius: 6px;
+    padding: 4px 10px;
+    margin-left: -10px;
+    border-radius: 7px;
     font-family: var(--font-mono);
-    font-size: var(--step--1);
+    font-size: 13px;
     color: var(--graphite);
-  }
-
-  .pick:hover {
-    color: var(--ink);
-    background: var(--raise);
     text-decoration: none;
   }
 
-  .pick[aria-current="page"] {
-    color: var(--brand-deep);
-    font-weight: 600;
+  .pg-side a:hover {
+    color: var(--ink);
+    background: var(--raise);
   }
 
-  /* THE PANES. Listing first in source order, so the stacked order below the
-   * breakpoint is program then output with no reordering. */
+  .pg-side a[aria-current="page"] {
+    color: var(--ink);
+    background: var(--raise);
+    box-shadow: inset 2px 0 0 var(--brand);
+  }
+
+  @media (max-width: 859px) {
+    .pg {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    /* Doubled up so these outrank the two-column placement below them in the
+     * file: without it the bench kept its second column on a phone and the
+     * tour squeezed into a sliver beside it. */
+    .pg .bench {
+      grid-column: 1;
+      grid-row: 2;
+    }
+    .pg .pg-side {
+      grid-column: 1;
+      grid-row: 1;
+    }
+    .pg-side {
+      position: static;
+      max-height: none;
+      flex-direction: row;
+      overflow-x: auto;
+      gap: 4px;
+      padding-bottom: 4px;
+    }
+    .pg-side > div {
+      display: contents;
+    }
+    .pg-side b {
+      display: none;
+    }
+    .pg-side a {
+      white-space: nowrap;
+      margin: 0;
+      border: var(--hair) solid var(--hairline);
+    }
+  }
+
+  .bench {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 0;
+  }
+
+  .pg-title {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .pg-title .small {
+    margin: 0;
+  }
+
+  .pg-title .small a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .pg-title .h1 {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-stretch: normal;
+    letter-spacing: -0.03em;
+    overflow-wrap: break-word;
+  }
+
+  @media (max-width: 600px) {
+    .pg-title .h1 {
+      font-size: 28px;
+    }
+  }
+
+  /* One card: the program, the run bar, what it printed. */
+  .pg-card {
+    border-radius: 14px;
+    border: var(--hair) solid var(--hairline);
+    background: var(--code);
+    overflow: hidden;
+  }
+
+  .pg-card > .source-head {
+    border-bottom: var(--hair) solid var(--hairline);
+    flex-wrap: nowrap;
+  }
+
+  .pg-card > .source-head .path {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .pg-card > .source-head .copy {
+    flex: none;
+  }
+
   .panes {
     display: grid;
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-    gap: 1.25rem;
-    align-items: stretch;
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  @media (max-width: 62rem) {
+  /* Program left, output right, where there is room for both to be read. */
+  @media (min-width: 1100px) {
     .panes {
-      grid-template-columns: minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    }
+    .panes .pane-output {
+      border-left: var(--hair) solid var(--hairline);
+    }
+  }
+
+  @media (max-width: 1099px) {
+    .panes .pane-output {
+      border-top: var(--hair) solid var(--hairline);
     }
   }
 
   .pane-listing {
     margin: 0;
-    border-radius: var(--radius);
-    background: var(--paper);
-    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
   }
 
-  /* Two classes deep to beat `.source pre` from code.css, which sets
-   * `overflow: visible` and would otherwise let a long line spill. */
   .pane-listing .listing {
-    height: clamp(12rem, calc(var(--lines) * 1.58 * var(--step--1) + 2.2rem), 44rem);
+    margin: 0;
+    padding: 16px 18px;
+    min-height: 150px;
+    max-height: 44rem;
+    height: calc(var(--lines) * 1.7 * 13px + 32px);
     overflow: auto;
     white-space: pre;
     tab-size: 2;
+    resize: vertical;
+    outline: 0;
   }
 
-  /* The pane is edited in place, so it takes a focus ring like any other
-   * control rather than the browser's default outline drawn inside the box. */
   .pane-listing .listing:focus-visible {
-    outline: 2px solid var(--brand);
-    outline-offset: -2px;
+    box-shadow: inset 0 0 0 2px var(--brand);
   }
 
-  /* THE RECORDED DIAGNOSTIC, ON THE LINE IT IS ABOUT. Drawn with pseudo
-   * elements and custom properties rather than with characters, because the
-   * pane's text is hashed against the record and copied by the control beside
-   * it: a marker made of characters would change both. `--col` is the
-   * compiler's own column, counted from zero, and `--wide` is the width of its
-   * caret run, both out of records/diagnostics.json.
-   *
-   * Global because the span is written into `set:html`, which Astro does not
-   * give its scoped attribute to. */
   .pane-listing :global(.flagged) {
     position: relative;
   }
 
-  /* The gutter mark. Offset into the pre's own padding so the line's
-   * characters stay on the same grid as every other line's. */
   .pane-listing :global(.flagged)::before {
     content: "";
     position: absolute;
@@ -955,7 +983,6 @@ const step = at >= 0 ? `${at + 1} of ${tourSamples.length}` : null;
     border-inline-start: 2px solid var(--signal);
   }
 
-  /* The caret, under exactly the columns the compiler underlined. */
   .pane-listing :global(.flagged)::after {
     content: "";
     position: absolute;
@@ -965,9 +992,62 @@ const step = at >= 0 ? `${at + 1} of ${tourSamples.length}` : null;
     border-block-end: 2px solid var(--signal);
   }
 
+  .bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 10px 12px 10px 16px;
+    border-bottom: var(--hair) solid var(--hairline);
+    background: var(--raise);
+  }
+
+  .bar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .bar .button {
+    height: 36px;
+    font-size: 14px;
+  }
+
+  .bar .button[hidden] {
+    display: none;
+  }
+
+  .bar .run svg {
+    width: 10px;
+    height: 10px;
+    fill: currentColor;
+  }
+
+  .bar .run:disabled {
+    cursor: not-allowed;
+    background: var(--track);
+    color: var(--mute);
+    filter: none;
+  }
+
+  .chord {
+    font-weight: 400;
+    font-size: 12px;
+    opacity: 0.8;
+  }
+
+  @media (hover: none), (max-width: 40rem) {
+    .chord {
+      display: none;
+    }
+  }
+
   .pane-output {
-    min-height: 12rem;
-    border-radius: var(--radius);
+    min-height: 64px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     display: flex;
     flex-direction: column;
   }
@@ -981,46 +1061,45 @@ const step = at >= 0 ? `${at + 1} of ${tourSamples.length}` : null;
     color: var(--mute);
   }
 
+  .notice {
+    margin: 0;
+    padding: 12px 16px;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--warn);
+    background: var(--warn-soft);
+    border-top: var(--hair) solid var(--hairline);
+  }
+
+  .notice a {
+    color: inherit;
+  }
+
+  .stamp-line,
+  .honest {
+    margin: -12px 0 0;
+    max-width: 760px;
+  }
+
   .foot {
-    margin: 0.9rem 0 0;
-    font-size: var(--step--1);
-    color: var(--graphite);
+    margin: -16px 0 0;
   }
 
-  .local {
-    margin-block-start: 1.5rem;
-    max-width: 60rem;
+  .local .sec__head {
+    gap: 8px;
   }
 
-  .local .foot {
-    margin-block-end: 0.6rem;
-  }
-
-  .local-run pre {
-    padding-block: 0.7rem;
-  }
-
-  .tour {
+  .pager {
     display: flex;
     justify-content: space-between;
-    gap: 1rem;
-    margin-block-start: 2rem;
-    padding-block-start: 1rem;
-    border-top: var(--hair) solid var(--hairline);
-    font-family: var(--font-mono);
-    font-size: var(--step--1);
+    gap: 12px;
+    flex-wrap: wrap;
   }
 
-  .tour a {
-    padding: 0.5rem 0.2rem;
-  }
-
-  /* Runtime-only blocks: nodes the client script creates cannot carry Astro's
-   * scoped attributes, so these are declared global. */
   :global(.gap) {
     color: var(--signal);
     font-family: var(--font-mono);
-    font-size: var(--step--1);
+    font-size: 13px;
     line-height: 1.6;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
@@ -1029,7 +1108,7 @@ const step = at >= 0 ? `${at + 1} of ${tourSamples.length}` : null;
   :global(.note),
   :global(.stamp) {
     font-family: var(--font-mono);
-    font-size: var(--step--2);
+    font-size: 12px;
     color: var(--mute);
     line-height: 1.6;
   }

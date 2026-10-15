@@ -1,0 +1,543 @@
+---
+/**
+ * The edit loop, replayed at real speed on the home page.
+ *
+ * One line of one module is edited, and both builds start at the same moment:
+ * the same compiler binary under Crystal's rules, which reads every body
+ * again, and under iyi's, which reads the other modules' declarations and the
+ * one body that changed. Each lane runs for exactly as long as its build took.
+ *
+ * The durations, the module count and the ratio are the measured ones, from
+ * facts.json. The module names and the edit are illustrative, and the page
+ * says so under the panel.
+ *
+ * SETTLED IS THE DEFAULT. Both lanes are built, finished, in the HTML, so with
+ * scripts off this is the result. The script plays it once when it is
+ * scrolled to and again on Replay, never on a loop, and under reduced motion
+ * it does nothing.
+ */
+import facts from "../generated/facts.json";
+
+const loop = facts.recorded.edit_loop;
+const ratios = loop.ratios as number[];
+const modules = facts.structural.modules;
+const iyiSeconds = loop.best.iyi;
+const crystalSeconds = loop.best.crystal;
+const changed = Math.min(7, modules - 1);
+const band = `${Math.min(...ratios).toFixed(2)}x to ${Math.max(...ratios).toFixed(2)}x across ${loop.sessions.length} published sessions`;
+
+const lanes = [
+  { k: 0, tag: "Same compiler, Crystal's rules", how: "reads every body again", seconds: crystalSeconds },
+  { k: 1, tag: "iyi", how: `reads ${modules - 1} declarations, 1 body`, seconds: iyiSeconds },
+];
+---
+
+<div
+  class="race rebuild"
+  data-rebuild
+  data-iyi={iyiSeconds}
+  data-crystal={crystalSeconds}
+  data-modules={modules}
+  data-changed={changed}
+  data-state="done"
+>
+  <div class="race-in">
+    <div class="race-top">
+      <span>
+        <i class="race-dot" data-dot></i>
+        <span class="race-title">{loop.subject}</span>
+        <span class="opt"><Fragment set:text={facts.structural.generated.toLocaleString("en-GB")} /> lines</span>
+      </span>
+      <span>
+        <span class="opt">real speed · fastest of {loop.sessions.length} sessions</span>
+        <button type="button" class="race-replay" data-replay>
+          <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M10 6a4 4 0 1 1-1.2-2.85M10 1.5v2.2H7.8" /></svg>
+          Replay
+        </button>
+      </span>
+    </div>
+
+    <div class="rb">
+      <div class="rb-edit">
+        <div class="rb-file">app/greeter.iyi</div>
+        <pre class="rb-code"><span class="c">module app/greeter</span>
+
+<span class="rb-sig">pub def polite(name : String) : String</span>
+<span class="rb-line" data-line>  "Dear #&#123;name&#125;, welcome."</span><span class="rb-caret" data-caret>▍</span>
+end</pre>
+        <div class="rb-legend">
+          <span><i class="rb-k rb-k--sig"></i>declaration · what consumers read · unchanged</span>
+          <span><i class="rb-k rb-k--body"></i>body · the edit</span>
+        </div>
+        <div class="rb-cmd is-on" data-cmd><span class="c">$</span> build</div>
+      </div>
+
+      <div class="rb-lanes">
+        {
+          lanes.map((lane) => (
+            <div class="rb-lane is-done" data-k={lane.k}>
+              <div class="rb-head">
+                <b>{lane.tag}</b>
+                <span>{lane.how}</span>
+              </div>
+              <div class="rb-grid" aria-hidden="true">
+                {Array.from({ length: modules }, (_, i) => (
+                  <i
+                    class:list={[
+                      { "is-changed": i === changed },
+                      lane.k === 0 || i === changed ? "is-body" : "is-decl",
+                    ]}
+                  />
+                ))}
+              </div>
+              <div class="rb-foot">
+                <span class="rb-t">{lane.seconds.toFixed(2)} s</span>
+                <span class="rb-s">built</span>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+
+    <div class="race-foot" data-foot>
+      <p class="when when-done">
+        <b>About <span class="ok">{loop.claim.value}x less</span>, on the line you just changed.</b>
+        <span class="race-hint">{band} · <a href={`${import.meta.env.BASE_URL}why/#dx`}>the measurement</a></span>
+      </p>
+      <p class="when when-ahead"><span class="ok">iyi is done.</span> Crystal's rules are still reading bodies that did not change.</p>
+      <p class="when when-idle">Edit one line, build. Both lanes start at the same moment.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { playWhenSeen, reducedMotion } from "../lib/play-when-seen";
+
+  const BEFORE = '  "Dear #{name}"';
+  const AFTER = '  "Dear #{name}, welcome."';
+  const T_TYPE = 1.6;
+  const T_GAP = 0.35;
+  
+  document.querySelectorAll<HTMLElement>("[data-rebuild]").forEach((root) => {
+    if (reducedMotion()) return;
+
+    const iyi = Number(root.dataset.iyi);
+    const crystal = Number(root.dataset.crystal);
+    const n = Number(root.dataset.modules);
+    const changed = Number(root.dataset.changed);
+    const lanes = [...root.querySelectorAll<HTMLElement>(".rb-lane")];
+    const line = root.querySelector<HTMLElement>("[data-line]");
+    const caret = root.querySelector<HTMLElement>("[data-caret]");
+    const cmd = root.querySelector<HTMLElement>("[data-cmd]");
+    if (!line || !caret || !cmd) return;
+
+    root.dataset.js = "true";
+
+    const typed = (p: number) => {
+      const del = Math.min(1, p * 2);
+      const add = Math.max(0, p * 2 - 1);
+      if (add > 0) return AFTER.slice(0, 2 + Math.round((AFTER.length - 2) * add));
+      return BEFORE.slice(0, BEFORE.length - Math.round((BEFORE.length - 2) * del));
+    };
+
+    const paint = (k: number, lane: HTMLElement, bt: number) => {
+      const dur = k ? iyi : crystal;
+      const p = Math.max(0, Math.min(1, bt / dur));
+      lane.querySelectorAll<HTMLElement>(".rb-grid i").forEach((cell, i) => {
+        const isChanged = i === changed;
+        let state = "";
+        if (k === 0) state = p >= (i + 1) / n ? "is-body" : "";
+        else if (isChanged) state = p >= 1 ? "is-body" : "";
+        else state = p > 0 && p >= Math.min(0.95, (i + 1) / (n + 4)) ? "is-decl" : "";
+        cell.className = [isChanged ? "is-changed" : "", state].join(" ").trim();
+      });
+      const t = lane.querySelector<HTMLElement>(".rb-t");
+      if (t) t.textContent = `${Math.max(0, Math.min(bt, dur)).toFixed(2)} s`;
+      const s = lane.querySelector<HTMLElement>(".rb-s");
+      if (s) {
+        s.textContent =
+          bt <= 0
+            ? "waiting for an edit"
+            : p < 1
+              ? k
+                ? "reading declarations"
+                : `reading module ${Math.min(n, Math.floor(p * n) + 1)} of ${n}`
+              : "built";
+      }
+      lane.classList.toggle("is-done", p >= 1);
+    };
+
+    /* One run, then the finished result stays on the page. A measurement
+     * that loops reads as decoration; Replay runs it again. */
+    const end = T_TYPE + T_GAP + crystal;
+    let t0 = 0;
+    let raf = 0;
+    const frame = (now: number) => {
+      const t = Math.min((now - t0) / 1000, end);
+      line.textContent = typed(Math.min(1, t / T_TYPE));
+      caret.style.opacity = t < T_TYPE ? (Math.floor(t * 3) % 2 ? "0" : "1") : "0";
+      const bt = t - T_TYPE - T_GAP;
+      cmd.classList.toggle("is-on", bt > -0.2);
+      lanes.forEach((lane, k) => paint(k, lane, bt));
+      root.dataset.state = bt >= crystal ? "done" : bt > iyi ? "ahead" : bt > 0 ? "running" : "idle";
+      if (t < end) raf = requestAnimationFrame(frame);
+    };
+    const play = () => {
+      cancelAnimationFrame(raf);
+      t0 = performance.now();
+      raf = requestAnimationFrame(frame);
+    };
+
+    root.querySelector("[data-replay]")?.addEventListener("click", play);
+
+    playWhenSeen(root, play, { threshold: 0.35 });
+  });
+</script>
+
+<style>
+  .race {
+    border-radius: 18px;
+    padding: 1px;
+    background: var(--panel-frame);
+    box-shadow: var(--panel-shadow);
+  }
+
+  .race-in {
+    border-radius: 17px;
+    background: var(--code);
+    color: var(--ink);
+    overflow: hidden;
+  }
+
+  .race-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 20px;
+    padding: 12px 18px;
+    border-bottom: var(--hair) solid var(--hairline);
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--mute);
+  }
+
+  .race-top > span {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .race-top > span:last-child {
+    margin-left: auto;
+    flex: none;
+  }
+
+  .race-title {
+    color: var(--ink);
+  }
+
+  .race-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ok);
+  }
+
+  .rebuild[data-state="idle"] .race-dot {
+    background: var(--hairline);
+  }
+
+  .rebuild[data-state="running"] .race-dot,
+  .rebuild[data-state="ahead"] .race-dot {
+    background: var(--warn);
+  }
+
+  .race-replay {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    appearance: none;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 7px;
+    border: var(--hair) solid var(--boundary);
+    background: none;
+    color: var(--ink);
+    font: 600 12.5px var(--font-sans);
+  }
+
+  .rebuild[data-js="true"] .race-replay {
+    display: inline-flex;
+  }
+
+  .race-replay svg {
+    width: 12px;
+    height: 12px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  @media (max-width: 640px) {
+    .opt {
+      display: none;
+    }
+  }
+
+  .rb {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .rb-edit {
+    flex: 1 1 330px;
+    display: flex;
+    flex-direction: column;
+    border-right: var(--hair) solid var(--hairline);
+    border-bottom: var(--hair) solid var(--hairline);
+    margin-bottom: -1px;
+    min-width: 0;
+  }
+
+  .rb-file {
+    padding: 10px 18px;
+    border-bottom: var(--hair) solid var(--hairline);
+    font: 12px var(--font-mono);
+    color: var(--mute);
+  }
+
+  .rb-code {
+    margin: 0;
+    padding: 12px 18px;
+    font: 12px/1.75 var(--font-mono);
+    color: var(--ink);
+    white-space: pre;
+    overflow-x: auto;
+    flex: 1;
+  }
+
+  .rb-code .c {
+    color: var(--mute);
+  }
+
+  .rb-line {
+    color: var(--ok);
+    background: var(--ok-soft);
+    box-shadow: inset 2px 0 0 var(--ok);
+  }
+
+  .rb-caret {
+    color: var(--brand-deep);
+    opacity: 0;
+  }
+
+  .rb-sig {
+    box-shadow: inset 2px 0 0 var(--mute);
+    padding-right: 4px;
+  }
+
+  .rb-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 0 18px 14px;
+    font-size: 12px;
+    color: var(--graphite);
+  }
+
+  .rb-legend span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .rb-k {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex: none;
+  }
+
+  .rb-k--sig {
+    box-shadow: inset 2px 0 0 var(--mute);
+    background: var(--raise);
+  }
+
+  .rb-k--body {
+    background: var(--ok-soft);
+    box-shadow: inset 2px 0 0 var(--ok);
+  }
+
+  .rb-cmd {
+    padding: 12px 18px;
+    border-top: var(--hair) solid var(--hairline);
+    font: 13px var(--font-mono);
+    color: var(--mute);
+    transition: color 0.2s;
+  }
+
+  .rb-cmd.is-on {
+    color: var(--ink);
+  }
+
+  .rb-cmd .c {
+    color: var(--mute);
+  }
+
+  .rb-lanes {
+    flex: 1.8 1 460px;
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .rb-lane {
+    flex: 1 1 230px;
+    padding: 14px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-right: var(--hair) solid var(--hairline);
+    border-bottom: var(--hair) solid var(--hairline);
+    margin-bottom: -1px;
+    min-width: 0;
+  }
+
+  .rb-lane:last-child {
+    border-right: 0;
+  }
+
+  /* Name over description in both lanes, so the two durations under them
+   * sit on one line whatever the width. */
+  .rb-head {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .rb-head b {
+    font-size: 14px;
+    font-weight: 650;
+    color: var(--graphite);
+  }
+
+  .rb-lane[data-k="1"] .rb-head b {
+    color: var(--brand-deep);
+  }
+
+  .rb-head span {
+    font: 12px var(--font-mono);
+    color: var(--mute);
+  }
+
+  /* Ten across, so thirty modules are three rows and the two durations stay
+   * in the first screen. */
+  .rb-grid {
+    display: grid;
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .rb-grid i {
+    aspect-ratio: 1.6;
+    border-radius: 4px;
+    background: var(--raise);
+    box-shadow: inset 0 0 0 1px var(--hairline);
+    transition: background 0.06s;
+  }
+
+  .rb-grid i.is-body {
+    background: var(--graphite);
+  }
+
+  .rb-grid i.is-decl {
+    background: linear-gradient(180deg, var(--ok) 0 3px, var(--raise) 3px);
+  }
+
+  .rb-grid i.is-changed {
+    box-shadow: inset 0 0 0 1.5px var(--brand);
+  }
+
+  .rb-lane[data-k="1"] .rb-grid i.is-changed.is-body {
+    background: var(--ok);
+  }
+
+  /* Right under the modules it timed, not pinned to the panel's foot, so
+   * the two durations are in the first screen on a laptop. */
+  .rb-foot {
+    margin-top: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .rb-t {
+    font: 500 clamp(36px, 4.6vw, 56px) / 1 var(--font-mono);
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+
+  .rb-lane.is-done[data-k="1"] .rb-t {
+    color: var(--ok);
+  }
+
+  .rb-s {
+    font-size: 13px;
+    color: var(--graphite);
+  }
+
+  .race-foot {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    border-top: var(--hair) solid var(--hairline);
+    min-height: 66px;
+    background: var(--raise);
+    transition: background 0.4s;
+  }
+
+  .rebuild[data-state="done"] .race-foot {
+    background: var(--ok-soft);
+  }
+
+  .when {
+    margin: 0;
+    width: 100%;
+    font-size: 15px;
+    color: var(--graphite);
+    display: none;
+  }
+
+  .rebuild[data-state="done"] .when-done {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px 20px;
+  }
+
+  .rebuild[data-state="ahead"] .when-ahead,
+  .rebuild[data-state="running"] .when-idle,
+  .rebuild[data-state="idle"] .when-idle {
+    display: block;
+  }
+
+  .when-done b {
+    font-weight: 750;
+    font-stretch: 108%;
+    font-size: clamp(20px, 2.4vw, 28px);
+    letter-spacing: -0.025em;
+    color: var(--ink);
+  }
+
+  .race-hint {
+    margin-left: auto;
+    font-size: 13px;
+  }
+</style>

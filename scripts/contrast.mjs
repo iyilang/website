@@ -81,7 +81,7 @@ const value = (name) => {
 /* ------------------------------------------------------------------------ */
 
 /** The grounds prose sits on, in the light scheme. */
-const GROUNDS = ["paper", "raise", "brand-soft"];
+const GROUNDS = ["paper", "raise", "card", "code", "brand-soft"];
 
 /**
  * And in the dark one. `src/styles/tokens.css` declares the dark palette under
@@ -92,7 +92,7 @@ const GROUNDS = ["paper", "raise", "brand-soft"];
  * means two sets of rows, which is the cost of the second scheme being
  * checkable rather than asserted.
  */
-const GROUNDS_DARK = ["paper-dark", "raise-dark", "brand-soft-dark"];
+const GROUNDS_DARK = ["paper-dark", "raise-dark", "card-dark", "code-dark", "brand-soft-dark"];
 
 /**
  * The pairs, each with the floor its role requires.
@@ -102,8 +102,11 @@ const GROUNDS_DARK = ["paper-dark", "raise-dark", "brand-soft-dark"];
  * at `--step-1` and heavier or larger, so they are large text: 3.0. `--brand`
  * is only ever used that way; `--brand-deep` exists for the sizes that are
  * not, which is why the two are separate tokens at all.
- * `reverse` is paper on a filled ground: 4.5, because the CTA's label is 17px
- * at 600 and that is not large text.
+ * `reverse` is a label on a filled ground: 4.5, because a button's label is
+ * 15px at 600 and that is not large text. The red button's label is
+ * `--on-brand`, white in both schemes; the ink button's is the page ground.
+ * `status` is the green and the amber a run reports in, as text on every
+ * ground and on the soft ground of its own chip: 4.5, they are set small.
  * `boundary` is a focus ring or any non-text control edge: 1.4.11, 3.0.
  */
 const PAIRS = [
@@ -116,12 +119,15 @@ const PAIRS = [
     })),
   ),
   ...GROUNDS.map((ground) => ({ ink: "brand", ground, role: "display", floor: 3 })),
-  ...["brand", "brand-deep", "ink"].map((ground) => ({
+  { ink: "on-brand", ground: "brand", role: "reverse", floor: 4.5 },
+  ...["brand-deep", "ink"].map((ground) => ({
     ink: "paper",
     ground,
     role: "reverse",
     floor: 4.5,
   })),
+  ...[...GROUNDS, "ok-soft"].map((ground) => ({ ink: "ok", ground, role: "status", floor: 4.5 })),
+  ...[...GROUNDS, "warn-soft"].map((ground) => ({ ink: "warn", ground, role: "status", floor: 4.5 })),
   ...["paper", "raise"].map((ground) => ({
     ink: "brand",
     ground,
@@ -137,12 +143,15 @@ const PAIRS = [
     })),
   ),
   ...GROUNDS_DARK.map((ground) => ({ ink: "brand-dark", ground, role: "display", floor: 3 })),
-  ...["brand-dark", "brand-deep-dark", "ink-dark"].map((ground) => ({
+  { ink: "on-brand", ground: "brand-dark", role: "reverse", floor: 4.5 },
+  ...["brand-deep-dark", "ink-dark"].map((ground) => ({
     ink: "paper-dark",
     ground,
     role: "reverse",
     floor: 4.5,
   })),
+  ...[...GROUNDS_DARK, "ok-soft-dark"].map((ground) => ({ ink: "ok-dark", ground, role: "status", floor: 4.5 })),
+  ...[...GROUNDS_DARK, "warn-soft-dark"].map((ground) => ({ ink: "warn-dark", ground, role: "status", floor: 4.5 })),
   ...["paper-dark", "raise-dark"].map((ground) => ({
     ink: "brand-dark",
     ground,

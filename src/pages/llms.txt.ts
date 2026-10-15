@@ -91,7 +91,7 @@ for Type\` lives with the trait or the type (R-3).
   modules and rebuild in ${loop.best.iyi} s, against ${loop.best.crystal} s under Crystal's rules on the
   same compiler binary: ${loop.claim.value}x less. Measured by \`${loop.command}\`
   on ${loop.machine}.
-- AI experience: a module's interface is a file (.iyimod). \`iyi mod context\`
+- Agent experience (AX): a module's interface is a file (.iyimod). \`iyi mod context\`
   grounds an edit at ${pack.size_low} to ${pack.size_high}% of the sources' size; a model writing
   against it spent ${pack.tokens_low} to ${pack.tokens_high}% fewer prompt tokens over ${pack.runs} measured
   runs (\`${pack.command}\`). The loop is one verb per step, and every step of

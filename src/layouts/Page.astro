@@ -15,19 +15,19 @@ import "../generated/fonts.css";
 import "../styles/tokens.css";
 import "../styles/base.css";
 import "../styles/code.css";
+import "../styles/site.css";
 import "../styles/print.css";
 
 /* The two faces every page needs before it can draw a word: the variable sans
  * the prose is set in and the mono the code is set in, latin in both cases.
  * They are discovered otherwise only after the stylesheet has been fetched and
- * parsed, which is one round trip after the browser could have started them,
- * and there was not a single preload in the whole build. The other faces are
- * left to be discovered: a page might use no italic and no 600, and preloading
- * a face nobody needs is the waste this slice went and removed. `crossorigin`
+ * parsed, which is one round trip after the browser could have started them.
+ * The latin-ext files are left to be discovered: a page with no Turkish
+ * letter on it never asks for them. `crossorigin`
  * is required even same-origin, because fonts are fetched in CORS mode and a
  * preload without it fetches the file a second time. */
-import sansLatin from "@fontsource-variable/figtree/files/figtree-latin-wght-normal.woff2";
-import monoLatin from "@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2";
+import sansLatin from "@fontsource-variable/mona-sans/files/mona-sans-latin-wdth-normal.woff2";
+import monoLatin from "@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2";
 
 import { Image } from "astro:assets";
 import mascot from "../assets/mascot.png";
@@ -165,8 +165,7 @@ const current = (path: string) => here.startsWith(href(path));
     <link rel="apple-touch-icon" href={href("apple-touch-icon.png")} sizes="180x180" />
     <link rel="manifest" href={href("site.webmanifest")} />
     <link rel="sitemap" href={href("sitemap-index.xml")} />
-    <meta name="theme-color" content={token("paper")} media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content={token("paper-dark")} media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content={token("paper-dark")} />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content={siteName} />
     {indexable && <meta property="og:url" content={canonical} />}
@@ -199,18 +198,26 @@ const current = (path: string) => here.startsWith(href(path));
         </>
       )
     }
+    {/* The stored scheme, applied before the first paint. Dark is what the
+        stylesheet draws with nothing set, so only a reader who chose light
+        has anything to restore, and restoring it after the body has painted
+        is a flash of the wrong page on every load. Inline, because a bundled
+        module runs too late to prevent that. */}
+    <script is:inline>
+      try {
+        if (localStorage.getItem("iyi-theme") === "light") document.documentElement.dataset.theme = "light";
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
 
     <header class="masthead">
-      <div class="wrap masthead-inner">
+      <div class="masthead-inner">
         <a class="wordmark" href={href("/")} aria-label="iyi, home">
-          {/* 28x26 on the page, and it used to be served as the 1200px
-              original: every visit paid for a hero-sized file to draw a mark
-              the width of a word. `densities` asks astro:assets for the 1x and
-              2x it can actually use. Eager, because it is above the fold on
-              every page and a lazy mark pops in after the header has drawn. */}
+          {/* 28px on the page, and served at the size it is drawn: `densities`
+              asks astro:assets for the 1x and 2x it can actually use. Eager,
+              because it is above the fold on every page. */}
           <Image
             src={mascot}
             alt=""
@@ -222,48 +229,6 @@ const current = (path: string) => here.startsWith(href(path));
           />
           <span>iyi</span>
         </a>
-        {/* The scheme switch. Hidden until the script claims the masthead,
-            for the same reason the menu button is: a control that cannot
-            remember a choice is an ornament, and the page already reads the
-            machine's preference without one. */}
-        {/* The two grounds, read out of tokens.css at build time rather than
-            off the live cascade. `getComputedStyle(root)` for `--paper`
-            returns whichever scheme is showing, so on a machine that prefers
-            dark it answers the dark ground and the switch would have written
-            the wrong chrome colour for the light one. */}
-        <button
-          type="button"
-          class="scheme-toggle"
-          data-paper={token("paper")}
-          data-paper-dark={token("paper-dark")}
-        >
-          {/* Drawn, not typed. The moon and sun characters this button first
-              used are outside the latin and latin-ext subsets the site ships,
-              so they fell back to whatever the machine had, and an emoji is
-              never an icon here. These two are geometry in the markup: no
-              request, no font, no glyph table to miss them. Both ship and CSS
-              shows the one that names what the press will do - the moon on a
-              light page, because pressing it makes the page dark. */}
-          <svg class="to-dark" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-            <path d="M14 8.53A6 6 0 1 1 7.47 2a4.67 4.67 0 0 0 6.53 6.53z" />
-          </svg>
-          <svg class="to-light" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-            <circle cx="8" cy="8" r="3" />
-            <path
-              d="M8 1.1V3.4M8 12.6V14.9M1.1 8H3.4M12.6 8H14.9M3.12 3.12l1.63 1.63M11.25 11.25l1.63 1.63M3.12 12.88l1.63-1.63M11.25 4.75l1.63-1.63"
-            />
-          </svg>
-          <span class="visually-hidden">Switch the color scheme</span>
-        </button>
-        <button
-          type="button"
-          class="menu-toggle"
-          aria-expanded="false"
-          aria-controls="site-nav"
-          aria-label="Menu"
-        >
-          <span class="bars" aria-hidden="true"><i></i><i></i><i></i></span>
-        </button>
         <nav id="site-nav" aria-label="Sections">
           <ul>
             {
@@ -275,11 +240,43 @@ const current = (path: string) => here.startsWith(href(path));
                 </li>
               ))
             }
-            <li class="nav-github">
+            <li>
               <a href="https://github.com/iyilang/iyi">GitHub</a>
             </li>
           </ul>
         </nav>
+        {/* Both controls are hidden until the script claims the masthead: a
+            control that cannot remember a choice or unfold a menu is an
+            ornament. Their marks are drawn, not typed, so no glyph falls back
+            to whatever the reader's machine has. */}
+        <div class="masthead-controls">
+          <button
+            type="button"
+            class="icon-button scheme-toggle"
+            data-paper={token("paper")}
+            data-paper-dark={token("paper-dark")}
+          >
+            <svg class="to-dark" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+              <path d="M14 8.53A6 6 0 1 1 7.47 2a4.67 4.67 0 0 0 6.53 6.53z" />
+            </svg>
+            <svg class="to-light" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+              <circle cx="8" cy="8" r="3" />
+              <path
+                d="M8 1.1V3.4M8 12.6V14.9M1.1 8H3.4M12.6 8H14.9M3.12 3.12l1.63 1.63M11.25 11.25l1.63 1.63M3.12 12.88l1.63-1.63M11.25 4.75l1.63-1.63"
+              />
+            </svg>
+            <span class="visually-hidden">Switch the color scheme</span>
+          </button>
+          <button
+            type="button"
+            class="icon-button menu-toggle"
+            aria-expanded="false"
+            aria-controls="site-nav"
+            aria-label="Menu"
+          >
+            <span class="bars" aria-hidden="true"><i></i><i></i><i></i></span>
+          </button>
+        </div>
       </div>
     </header>
 
@@ -290,52 +287,40 @@ const current = (path: string) => here.startsWith(href(path));
       const toggle = document.querySelector<HTMLButtonElement>(".menu-toggle");
       if (header && toggle) {
         header.dataset.js = "true";
-        toggle.addEventListener("click", () => {
-          const open = header.dataset.open !== "true";
+        const set = (open: boolean) => {
           header.dataset.open = String(open);
           toggle.setAttribute("aria-expanded", String(open));
+        };
+        toggle.addEventListener("click", () => set(header.dataset.open !== "true"));
+        header.querySelector("nav")?.addEventListener("click", (event) => {
+          if ((event.target as HTMLElement).closest("a")) set(false);
         });
       }
 
-      /* The scheme switch.
-       *
-       * The page is already whatever the machine prefers, decided in
-       * tokens.css by a media query that needs nothing from here. All this
-       * does is write an override onto `<html>` and remember it, which is the
-       * one thing CSS cannot do for itself.
-       *
-       * The `theme-color` metas are rewritten with it. They ship
-       * media-scoped, which is right until a reader overrules the machine and
-       * then says the wrong thing about the browser's own chrome: a red bar
-       * over a white page is the defect those metas were added to fix.
-       */
+      /* The scheme switch. The page is dark unless `<html>` says light, which
+       * the inline script in the head has already restored from storage. All
+       * this does is flip that attribute, remember it, and keep the browser
+       * chrome's colour in step with the page. */
       const scheme = document.querySelector<HTMLButtonElement>(".scheme-toggle");
       if (header && scheme) {
         const root = document.documentElement;
         const paper = scheme.dataset.paper ?? "";
         const paperDark = scheme.dataset.paperDark ?? "";
+        const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
 
         const apply = (want: "light" | "dark") => {
-          root.dataset.theme = want;
-          for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) {
-            meta.removeAttribute("media");
-            meta.content = want === "dark" ? paperDark : paper;
-          }
+          if (want === "light") root.dataset.theme = "light";
+          else delete root.dataset.theme;
+          if (meta) meta.content = want === "dark" ? paperDark : paper;
+          try {
+            localStorage.setItem("iyi-theme", want);
+          } catch {}
         };
 
-        /* What the page is right now: an override if one was stored, the
-         * machine's answer otherwise. Read rather than assumed, so the first
-         * press always flips what the reader is looking at. */
-        const stored = localStorage.getItem("iyi-theme");
-        if (stored === "light" || stored === "dark") apply(stored);
+        if (root.dataset.theme === "light" && meta) meta.content = paper;
 
         scheme.addEventListener("click", () => {
-          const dark = root.dataset.theme
-            ? root.dataset.theme === "dark"
-            : matchMedia("(prefers-color-scheme: dark)").matches;
-          const want = dark ? "light" : "dark";
-          apply(want);
-          localStorage.setItem("iyi-theme", want);
+          apply(root.dataset.theme === "light" ? "dark" : "light");
         });
       }
     </script>
@@ -345,61 +330,58 @@ const current = (path: string) => here.startsWith(href(path));
     </main>
 
     <footer class="colophon">
-      <div class="wrap colophon-inner">
-        <div class="colophon-brand">
-          {/* At the foot of every page, so it is below the fold on all of
-              them and lazy by definition. */}
-          <Image
-            src={mascot}
-            alt="The iyi mascot, a waving heart"
-            width={72}
-            height={68}
-            densities={[1, 2]}
-            loading="lazy"
-            decoding="async"
-          />
-          {/* What the thing is, for a reader who landed on a deep page and
-              scrolled to the bottom. The licence and the copyright used to be
-              recited here, which made the footer of every page a hand-typed
-              second copy of `/project/notice/` - the repository's own NOTICE,
-              published there verbatim and checked byte for byte on every
-              build. One copy, and a link to it.
-
-              The rule is put as the refusal it is, and in words the hero does
-              not already use: the hero says "declarations, never their
-              bodies" and "an interface instead of a repository", so a third
-              page-furniture copy of those two phrases would read as a
-              template. What a dependency declares against what it does is
-              the same rule said once. */}
-          <p>
-            iyi is Turkish for good. A fast, compiled language for developers
-            and the agents working beside them, built on a single refusal: a
-            module compiles against what its dependencies declare, never
-            against what they do. Quick builds and small binaries follow from
-            it.
-          </p>
+      <div class="colophon-inner">
+        <div class="colophon-top">
+          <div class="colophon-brand">
+            <a class="wordmark wordmark--large" href={href("/")}>
+              {/* At the foot of every page, so below the fold and lazy. */}
+              <Image
+                src={mascot}
+                alt="The iyi mascot, a waving heart"
+                width={40}
+                height={37}
+                densities={[1, 2]}
+                loading="lazy"
+                decoding="async"
+              />
+              <span>iyi</span>
+            </a>
+            {/* What the thing is, for a reader who landed on a deep page and
+                scrolled to the bottom. The licence is one link away, at
+                `/project/notice/`, rather than a second copy here. */}
+            <p>
+              <strong>iyi is Turkish for good.</strong> A fast, compiled
+              language for developers and the agents working beside them, built
+              on a single refusal: a module compiles against what its
+              dependencies declare, never against what they do. Quick builds
+              and small binaries follow from it.
+            </p>
+            <a class="button button--ink" href={href("install/")}>Install iyi →</a>
+          </div>
+          <nav class="colophon-links" aria-label="Footer">
+            <ul>
+              {
+                nav.map(([label, path]) => (
+                  <li>
+                    <a href={href(path)}>{label}</a>
+                  </li>
+                ))
+              }
+            </ul>
+            <ul>
+              <li><a href="https://github.com/iyilang/iyi">Source on GitHub</a></li>
+              <li><a href={href("project/notice/")}>License and notices</a></li>
+            </ul>
+          </nav>
         </div>
-        <nav class="colophon-links" aria-label="Footer">
-          <ul>
-            {
-              nav.map(([label, path]) => (
-                <li>
-                  <a href={href(path)}>{label}</a>
-                </li>
-              ))
-            }
-            <li><a href="https://github.com/iyilang/iyi">Source on GitHub</a></li>
-            <li><a href={href("project/notice/")}>License and notices</a></li>
-          </ul>
-        </nav>
-        <dl class="evidence colophon-evidence">
-          <dt>latest release</dt>
-          <dd><a href={releaseUrl(release)}>{release.version}</a>, {release.date}</dd>
-          <dt>numbers on this site</dt>
-          <dd>generated by {facts.provenance.generator}</dd>
-          <dt>measured at</dt>
-          <dd>{facts.provenance.commit}</dd>
-        </dl>
+        <p class="colophon-bottom">
+          <span>
+            latest release <a href={releaseUrl(release)}>{release.version}</a> · {release.date}
+          </span>
+          <span>
+            numbers on this site generated by {facts.provenance.generator} · measured at {facts.provenance.commit}
+          </span>
+        </p>
       </div>
     </footer>
 
@@ -407,9 +389,7 @@ const current = (path: string) => here.startsWith(href(path));
       Where every copy control's answer is spoken, and the only one on the
       page. `src/lib/copy.ts` writes into it; nothing else does. It has to be
       in the document before the text arrives, because a live region inserted
-      together with its contents announces nothing, which is why it is emitted
-      here on every page rather than created next to a button. Empty on load,
-      so it says nothing until somebody presses something.
+      together with its contents announces nothing.
     */}
     <p id="copy-status" class="visually-hidden" role="status" aria-live="polite"></p>
 
@@ -419,92 +399,118 @@ const current = (path: string) => here.startsWith(href(path));
         left: -9999px;
       }
       .skip:focus {
-        left: var(--edge);
-        top: var(--edge);
-        background: var(--raise);
-        padding: 0.5rem 0.8rem;
-        border: var(--hair) solid var(--ink);
-        z-index: 10;
+        left: 16px;
+        top: 12px;
+        z-index: 50;
+        background: var(--ink);
+        color: var(--paper);
+        padding: 8px 12px;
+        border-radius: 8px;
       }
 
+      /* Sticky and translucent: the page scrolls under a frosted bar. */
       .masthead {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        background: var(--masthead);
+        backdrop-filter: saturate(1.4) blur(16px);
+        -webkit-backdrop-filter: saturate(1.4) blur(16px);
         border-bottom: var(--hair) solid var(--hairline);
-        background: var(--paper);
       }
 
-      /* Wordmark left, controls right, the nav between them. Every child
-       * states its own order, because a source order that grew a third child
-       * left both controls stranded in the middle of a 390px bar with the
-       * right edge empty, and dropped the switch onto a row of its own below
-       * the sections the moment the menu opened. */
       .masthead-inner {
+        max-width: calc(var(--page) + 2 * var(--edge));
+        margin: 0 auto;
+        min-height: 60px;
+        padding: 0 var(--edge);
         display: flex;
         align-items: center;
-        justify-content: flex-start;
-        gap: 2rem;
-        min-height: 3.75rem;
+        gap: 24px;
         flex-wrap: wrap;
       }
 
-      .masthead .wordmark {
-        order: 1;
+      .wordmark {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--ink);
+        font-weight: 800;
+        font-size: 20px;
+        letter-spacing: -0.03em;
+        line-height: 1;
+        text-decoration: none;
       }
-      .masthead nav {
-        order: 2;
+      .wordmark:hover {
+        color: var(--ink);
+        text-decoration: none;
       }
-      .masthead .scheme-toggle {
-        order: 3;
-      }
-      .masthead .menu-toggle {
-        order: 4;
+      .wordmark :global(img) {
+        display: block;
+        width: 28px;
+        height: auto;
       }
 
-      /* The nav takes the slack, so it and the switch sit together at the
-       * right edge. Below the breakpoint the nav is a row of its own and the
-       * switch takes the slack instead. */
       .masthead nav {
-        margin-inline-start: auto;
+        flex: 1;
+      }
+      .masthead nav ul {
+        display: flex;
+        gap: 2px;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      .masthead nav a {
+        display: block;
+        padding: 8px 11px;
+        border-radius: 8px;
+        font-size: 14.5px;
+        font-weight: 500;
+        color: var(--graphite);
+        text-decoration: none;
+      }
+      .masthead nav a:hover,
+      .masthead nav a[aria-current="page"] {
+        color: var(--ink);
+        background: var(--raise);
       }
 
-      /* One square for both controls, so the pair reads as a pair: same box,
-       * same hairline, same radius, the mark centred in it. Both appear on
-       * the same handshake - `display: none` until the script sets `data-js`
-       * - because a control that cannot remember a choice or unfold a menu is
-       * an ornament. They sit after the nav in the source, so a reader
-       * tabbing the masthead meets the wordmark, then the sections, then the
-       * controls, and the menu items follow the button that opens them. */
-      .masthead .scheme-toggle,
-      .masthead .menu-toggle {
+      .masthead-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: auto;
+      }
+
+      /* A square with a control's own edge, so the scheme switch reads as a
+       * button among the links rather than as an ornament beside them. */
+      .icon-button {
         display: none;
+        appearance: none;
+        border: var(--hair) solid var(--boundary);
+        background: var(--card);
+        cursor: pointer;
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        border-radius: 10px;
+        color: var(--ink);
         align-items: center;
         justify-content: center;
-        inline-size: 2.25rem;
-        block-size: 2.25rem;
-        padding: 0;
-        background: none;
-        border: var(--hair) solid var(--boundary);
-        border-radius: 6px;
-        cursor: pointer;
-        color: var(--graphite);
       }
-
-      .masthead[data-js="true"] .scheme-toggle {
-        display: inline-flex;
-      }
-
-      .masthead .scheme-toggle:hover,
-      .masthead .menu-toggle:hover {
+      .icon-button:hover {
+        color: var(--ink);
+        background: var(--raise);
         border-color: var(--graphite);
       }
+      .masthead[data-js="true"] .scheme-toggle {
+        display: flex;
+      }
 
-      /* The two marks are drawn at the weight of the rules around them, in
-       * `currentColor`, and shown one at a time. The mark names the press
-       * rather than the state, so a light page offers the moon. The dark
-       * branch is whatever the page actually is, override or preference,
-       * which is why it is written twice the way tokens.css is. */
       .scheme-toggle svg {
-        inline-size: 1.125rem;
-        block-size: 1.125rem;
+        inline-size: 18px;
+        block-size: 18px;
         fill: none;
         stroke: currentColor;
         stroke-width: 1.5;
@@ -512,240 +518,173 @@ const current = (path: string) => here.startsWith(href(path));
         stroke-linejoin: round;
       }
 
-      .scheme-toggle .to-light {
+      /* The mark names the press, not the state: a dark page offers the sun. */
+      .scheme-toggle .to-dark {
         display: none;
-      }
-
-      @media (prefers-color-scheme: dark) {
-        :root:not([data-theme="light"]) .scheme-toggle .to-dark {
-          display: none;
-        }
-        :root:not([data-theme="light"]) .scheme-toggle .to-light {
-          display: block;
-        }
-      }
-
-      :root[data-theme="dark"] .scheme-toggle .to-dark {
-        display: none;
-      }
-      :root[data-theme="dark"] .scheme-toggle .to-light {
-        display: block;
       }
       :root[data-theme="light"] .scheme-toggle .to-dark {
         display: block;
       }
+      :root[data-theme="light"] .scheme-toggle .to-light {
+        display: none;
+      }
 
-      /* The hamburger: three bars, shown only below the breakpoint and only
-       * once the script has claimed the header. */
       .bars {
         display: grid;
         gap: 4px;
-        width: 18px;
+        width: 17px;
+        color: var(--ink);
       }
-
       .bars i {
         display: block;
-        height: 2px;
+        height: 1.5px;
         background: currentColor;
         border-radius: 1px;
         transition: transform var(--quick), opacity var(--quick);
       }
-
       .masthead[data-open="true"] .bars i:nth-child(1) {
-        transform: translateY(6px) rotate(45deg);
+        transform: translateY(5.5px) rotate(45deg);
       }
       .masthead[data-open="true"] .bars i:nth-child(2) {
         opacity: 0;
       }
       .masthead[data-open="true"] .bars i:nth-child(3) {
-        transform: translateY(-6px) rotate(-45deg);
+        transform: translateY(-5.5px) rotate(-45deg);
       }
 
-      /* The bars still cross into an X, they just arrive there. The state is
-       * what the control means; the sweep is decoration, and this is the one
-       * transition in the layout. */
+      /* Below the breakpoint the sections are a column of their own under the
+       * bar. With scripts blocked they are simply there; with the script they
+       * fold behind the menu button. */
+      @media (max-width: 959px) {
+        .masthead[data-js="true"] .menu-toggle {
+          display: flex;
+        }
+
+        /* A thumb, not a pointer: both controls grow to the 44 by 44 target. */
+        .icon-button {
+          width: 44px;
+          height: 44px;
+        }
+        .masthead nav {
+          order: 3;
+          flex-basis: 100%;
+          margin: 0 calc(-1 * var(--edge));
+          padding: 4px var(--edge) 18px;
+          border-top: var(--hair) solid var(--hairline);
+        }
+        .masthead[data-js="true"] nav {
+          display: none;
+        }
+        .masthead[data-open="true"] nav {
+          display: block;
+        }
+        .masthead nav ul {
+          flex-direction: column;
+        }
+        .masthead nav li + li {
+          border-top: var(--hair) solid var(--hairline);
+        }
+        .masthead nav a {
+          padding: 13px 0;
+          font-size: 17px;
+          color: var(--ink);
+          border-radius: 0;
+        }
+        .masthead nav a:hover {
+          background: none;
+        }
+        .masthead nav a[aria-current="page"] {
+          color: var(--brand-deep);
+          background: none;
+        }
+      }
+
       @media (prefers-reduced-motion: reduce) {
         .bars i {
           transition: none;
         }
       }
 
-      @media (max-width: 52rem) {
-        .masthead[data-js="true"] .menu-toggle {
-          display: inline-flex;
-        }
-
-        /* A thumb, not a pointer: both controls grow to the 44 by 44 target
-         * and sit beside each other at the right edge. The 2rem gap the bar
-         * uses to separate the wordmark from the sections is the wrong
-         * distance between two buttons that belong together. */
-        .masthead-inner {
-          gap: 0.5rem;
-        }
-
-        .masthead .scheme-toggle,
-        .masthead .menu-toggle {
-          inline-size: 2.75rem;
-          block-size: 2.75rem;
-        }
-
-        .masthead .scheme-toggle {
-          margin-inline-start: auto;
-        }
-
-        /* A row of its own, whether it folds or not: with scripts blocked
-         * the sections are a plain list under the wordmark, and with the
-         * script there they unfold into the same place. */
-        .masthead nav {
-          flex-basis: 100%;
-          margin-inline-start: 0;
-        }
-
-        .masthead[data-js="true"] nav {
-          display: none;
-          order: 5;
-          padding-block: 0.25rem 0.75rem;
-        }
-
-        .masthead[data-open="true"] nav {
-          display: block;
-        }
-
-        .masthead nav ul {
-          flex-direction: column;
-          align-items: stretch;
-          gap: 0.1rem;
-        }
-
-        .masthead nav a {
-          display: block;
-          padding: 0.6rem 0.7rem;
-          font-size: var(--step-0);
-        }
-
-        .nav-github {
-          margin-inline-start: 0;
-          margin-block-start: 0.3rem;
-        }
-      }
-
-      .wordmark {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        text-decoration: none;
-        font-size: 1.45rem;
-        font-weight: 800;
-        letter-spacing: -0.03em;
-        line-height: 1;
-        color: var(--ink);
-      }
-
-      .wordmark:hover {
-        text-decoration: none;
-      }
-
-      /* `:global(img)` because the element is rendered by astro:assets rather
-       * than written here, and Astro's scoping attribute is applied to the
-       * markup in this file. Scoped by the ancestor, which is this file's. */
-      .wordmark :global(img) {
-        display: block;
-        height: 1.65rem;
-        width: auto;
-      }
-
-      nav ul {
-        display: flex;
-        gap: 0.25rem;
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        flex-wrap: wrap;
-        align-items: center;
-      }
-
-      .masthead nav a {
-        display: inline-block;
-        padding: 0.45rem 0.7rem;
-        border-radius: 6px;
-        font-size: var(--step--1);
-        font-weight: 500;
-        color: var(--graphite);
-        text-decoration: none;
-      }
-
-      .masthead nav a:hover {
-        color: var(--ink);
-        background: var(--raise);
-      }
-
-      .masthead nav a[aria-current="page"] {
-        color: var(--brand-deep);
-      }
-
-      .nav-github {
-        margin-inline-start: 0.5rem;
-      }
-
-      .nav-github a {
-        border: var(--hair) solid var(--hairline);
-      }
-
       .colophon {
-        margin-block-start: 5rem;
-        padding-block: 2.5rem 3rem;
+        margin-top: clamp(80px, 11vw, 120px);
         border-top: var(--hair) solid var(--hairline);
         background: var(--raise);
       }
-
       .colophon-inner {
-        display: grid;
-        gap: 2.5rem;
-        grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.8fr) minmax(0, 1fr);
-        align-items: start;
-      }
-
-      @media (max-width: 52rem) {
-        .colophon-inner {
-          grid-template-columns: minmax(0, 1fr);
-        }
-      }
-
-      .colophon-brand {
+        max-width: calc(var(--page) + 2 * var(--edge));
+        margin: 0 auto;
+        padding: clamp(40px, 6vw, 64px) var(--edge) 28px;
         display: flex;
-        gap: 1.1rem;
+        flex-direction: column;
+        gap: clamp(32px, 5vw, 48px);
+      }
+      .colophon-top {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 32px 56px;
+        justify-content: space-between;
         align-items: flex-start;
       }
-
-      .colophon-brand :global(img) {
-        flex: none;
-        width: 4.5rem;
-        height: auto;
-      }
-
-      .colophon-brand p {
-        font-size: var(--step--1);
-        color: var(--graphite);
-        max-width: 42ch;
-        margin: 0;
-      }
-
-      .colophon-links ul {
+      .colophon-brand {
+        flex: 1 1 340px;
+        max-width: 480px;
+        display: flex;
         flex-direction: column;
-        gap: 0.35rem;
+        gap: 16px;
       }
-
-      .colophon-links a {
-        font-size: var(--step--1);
+      .wordmark--large {
+        font-weight: 750;
+        font-stretch: 108%;
+        font-size: 26px;
+      }
+      .wordmark--large :global(img) {
+        width: 40px;
+      }
+      .colophon-brand p {
+        margin: 0;
+        font-size: 15px;
+        line-height: 1.6;
         color: var(--graphite);
       }
-
-      .colophon-links a:hover {
+      .colophon-brand strong {
         color: var(--ink);
+        font-weight: 600;
       }
-
-      .colophon-evidence {
+      .colophon-links {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(140px, auto));
+        gap: 12px 48px;
+      }
+      .colophon-links ul {
+        list-style: none;
         margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .colophon-links a {
+        font-size: 15px;
+        color: var(--ink);
+        text-decoration: none;
+      }
+      .colophon-links a:hover {
+        color: var(--brand-deep);
+      }
+      .colophon-bottom {
+        margin: 0;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 8px 24px;
+        padding-top: 20px;
+        border-top: var(--hair) solid var(--hairline);
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: var(--mute);
+      }
+      .colophon-bottom a {
+        text-decoration: none;
       }
     </style>
   </body>

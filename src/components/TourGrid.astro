@@ -1,0 +1,278 @@
+---
+/**
+ * The tour, one row per section: the section's number, title and blurb, and
+ * its programs, each described by the program's own first comment line so the
+ * description cannot drift from the file. Read out of samples/tour/tour.json
+ * through src/playground/samples.ts, so a step this list offers is a step that
+ * has a page and a recording.
+ *
+ * Two densities. /learn/ shows the programs as chips, because there the tour
+ * is the second track; /playground/ shows each with its sentence, because
+ * there it is the whole page.
+ */
+import { blurbOf, runnable, tourSections } from "../playground/samples";
+import { inlineMarkdown } from "../lib/lessons";
+
+interface Props {
+  variant?: "chips" | "list";
+  /** The level the section titles take on the page they sit in. */
+  heading?: "h2" | "h3";
+}
+
+const { variant = "list", heading = "h2" } = Astro.props;
+const Title = heading;
+const base = import.meta.env.BASE_URL.replace(/\/*$/, "/");
+
+const plain = (markdown: string) => markdown.replace(/`/g, "");
+
+let n = 0;
+const sections = tourSections.map((section, i) => ({
+  no: String(i + 1).padStart(2, "0"),
+  title: section.title,
+  blurb: section.blurb,
+  steps: section.steps.map((step) => ({
+    n: ++n,
+    id: step.id,
+    href: `${base}playground/${step.id}/`,
+    blurb: blurbOf(step.path),
+    runs: runnable(step),
+  })),
+}));
+---
+
+<ol class:list={["track", { "track--list": variant === "list" }]}>
+  {
+    sections.map((section) => (
+      <li class="track-row">
+        <div class="track-ch">
+          <span class="track-no">{section.no}</span>
+          <div>
+            <Title class="track-title">{section.title}</Title>
+            <span>{section.blurb}</span>
+          </div>
+        </div>
+        {variant === "chips" ? (
+          <div class="track-progs">
+            {section.steps.map((step) => (
+              <a href={step.href} title={plain(step.blurb)} class:list={{ "is-start": step.n === 1 }} data-step={step.id}>
+                <i>{step.n}</i>{" "}
+                {step.id}
+                {!step.runs && <>{" "}<em class="native">native</em></>}
+              </a>
+            ))}
+          </div>
+        ) : (
+          <ol class="pgl">
+            {section.steps.map((step) => (
+              <li>
+                <a href={step.href} class:list={{ "is-start": step.n === 1 }} data-step={step.id}>
+                  <i>{step.n}</i>
+                  <b>{step.id}</b>
+                  {!step.runs && <>{" "}<em class="native">native</em></>}
+                  <span set:html={`${inlineMarkdown(step.blurb)}.`} />
+                  {/* Filled by the playground's progress island, in this
+                      browser only, and empty in the HTML. */}
+                  <small data-role="state"></small>
+                </a>
+              </li>
+            ))}
+          </ol>
+        )}
+      </li>
+    ))
+  }
+</ol>
+
+<style>
+  .track {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: var(--hair) solid var(--hairline);
+  }
+
+  .track-row {
+    display: grid;
+    grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+    gap: 12px 32px;
+    align-items: start;
+    padding: 18px 0;
+    border-bottom: var(--hair) solid var(--hairline);
+  }
+
+  .track--list .track-row {
+    padding: 22px 0;
+  }
+
+  @media (max-width: 759px) {
+    .track-row {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media (max-width: 1099px) {
+    .track--list .track-row {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .track-ch {
+    display: flex;
+    gap: 14px;
+    align-items: baseline;
+  }
+
+  .track-no {
+    font: 500 13px var(--font-mono);
+    color: var(--mute);
+    flex: none;
+  }
+
+  .track-ch div {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .track-title {
+    margin: 0;
+  }
+
+  .track-ch .track-title {
+    font-weight: 650;
+    font-size: 16.5px;
+    letter-spacing: -0.01em;
+  }
+
+  .track-ch div span {
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--graphite);
+  }
+
+  .track-progs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .track-progs a {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 7px;
+    padding: 7px 11px;
+    border-radius: 9px;
+    border: var(--hair) solid var(--hairline);
+    background: var(--card);
+    font: 500 13px var(--font-mono);
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .track-progs a:hover {
+    border-color: var(--mute);
+    color: var(--ink);
+    background: var(--raise);
+  }
+
+  .track-progs a i,
+  .pgl a i {
+    font-style: normal;
+    font-size: 11px;
+    color: var(--mute);
+  }
+
+  .track-progs a.is-start {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+  }
+
+  .track-progs a.is-start i,
+  .pgl a.is-start i {
+    color: var(--brand-deep);
+  }
+
+  em.native {
+    font-style: normal;
+    font-size: 10.5px;
+    padding: 1px 6px;
+    border-radius: 5px;
+    background: var(--warn-soft);
+    color: var(--warn);
+    font-family: var(--font-mono);
+  }
+
+  .pgl {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 12px;
+  }
+
+  @media (max-width: 599px) {
+    .pgl {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .pgl a {
+    display: grid;
+    grid-template-columns: 26px auto minmax(0, 1fr);
+    grid-template-areas:
+      "n name rec"
+      ". d d"
+      ". s s";
+    align-items: baseline;
+    gap: 2px 8px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .pgl a:hover {
+    background: var(--raise);
+    color: var(--ink);
+  }
+
+  .pgl a i {
+    grid-area: n;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+  }
+
+  .pgl a b {
+    grid-area: name;
+    font: 500 14px var(--font-mono);
+  }
+
+  .pgl a em.native {
+    grid-area: rec;
+    justify-self: start;
+  }
+
+  .pgl a span {
+    grid-area: d;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--graphite);
+  }
+
+  .pgl a.is-start {
+    background: var(--brand-soft);
+    box-shadow: inset 0 0 0 1px var(--brand);
+  }
+
+  .pgl small {
+    grid-area: s;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ok);
+  }
+
+  .pgl small:empty {
+    display: none;
+  }
+</style>

@@ -2,16 +2,16 @@
 import { Image } from "astro:assets";
 import Page from "../layouts/Page.astro";
 import Measure from "../components/Measure.astro";
-import Stamped from "../components/Stamped.astro";
-import DurationChart from "../components/DurationChart.astro";
+import AgentRace from "../components/AgentRace.astro";
+import RebuildRace from "../components/RebuildRace.astro";
 import Sample from "../components/Sample.astro";
 import Quote from "../components/Quote.astro";
 import Platform from "../components/Platform.astro";
 import facts from "../generated/facts.json";
 import { tourSamples, runnable, playgroundHref } from "../playground/samples";
-import { latestRelease, releaseUrl, releaseAssets, windowsAsset } from "../lib/release";
+import { latestRelease, releaseAssets, windowsAsset } from "../lib/release";
 import platforms from "../generated/targets.json";
-import { SPELLED, sequence } from "../lib/lessons";
+import { SPELLED } from "../lib/lessons";
 import mascot from "../assets/mascot.png";
 
 const release = latestRelease();
@@ -38,9 +38,6 @@ const loop = facts.recorded.edit_loop;
 const bin = facts.recorded.hello_binary;
 const pack = facts.recorded.context_pack;
 
-const ratios = loop.ratios as number[];
-const loopClaim = `About ${loop.claim.value}x less than Crystal, on the line you just changed.`;
-const loopBand = `${Math.min(...ratios).toFixed(2)}x to ${Math.max(...ratios).toFixed(2)}x across ${loop.sessions.length} published sessions.`;
 const massRatio = Math.round(bin.crystal.kb / bin.iyi.kb);
 
 /* The platforms README.md says are run every build, out of
@@ -60,14 +57,6 @@ if (wasm === undefined) {
   );
 }
 
-/* The lessons, counted rather than stated: this card said "Five lessons" while
- * the count lives in src/content/learn, so adding a lesson made the home page
- * wrong and no gate could see it. Spelled through the same table and with the
- * same fallback the learn index uses, which is what a thirteenth lesson would
- * need. */
-const lessons = await sequence();
-const spelled = SPELLED[lessons.length] ?? String(lessons.length);
-const lessonCount = `${spelled[0].toUpperCase()}${spelled.slice(1)}`;
 
 /* The machines a release ships an archive for, in README.md's own words for
  * them, through scripts/install-targets.mjs. "Linux x86-64 or macOS arm64" was
@@ -78,639 +67,334 @@ const lessonCount = `${spelled[0].toUpperCase()}${spelled.slice(1)}`;
 const machines = releaseAssets(release).map((asset) => asset.machine);
 const windows = windowsAsset(release);
 
-const starts = [
-  {
-    title: "Take the tour",
-    body: "The language in short programs, from hello to traits, generics and tasks. Each one runs in your browser; nothing needs installing.",
-    href: "playground/",
-    cta: "Start the tour",
-  },
-  {
-    title: "Learn the rule",
-    body: `${lessonCount} lessons on what makes iyi its own language, each one a real program from the repository, and each one ending in a mistake so you meet the compiler's own error on purpose.`,
-    href: "learn/",
-    cta: "Start the lessons",
-  },
-  {
-    title: "Install it",
-    body: `One command installs the latest release, on ${machines.join(" and ")} and now ${windows.machine} too, with both libraries and the samples. The second command runs hello.`,
-    href: "install/",
-    cta: "Install iyi",
-  },
-];
 ---
 
 <Page
   title="iyi, a friendly, fast language for people and their agents"
   summary="iyi is a compiled language written for two readers: the person editing the code and the agent editing it beside them. Modules compile against declarations, never bodies, so a build reads less and so does a model, and a grounded edit spent fewer prompt tokens over twenty-six measured runs."
 >
-  <section class="hero">
-    <div class="wrap hero-inner">
-      <div class="hero-copy">
-        <h1>A friendly, fast language for people and their agents.</h1>
-        <p class="lede">
-          iyi is a compiled language written for two readers: the person
-          editing the code and the agent editing it beside them. One rule
-          serves both. A module builds against its dependencies' declarations,
-          never their bodies, so a build reads less, a program carries less,
-          and a model reads an interface instead of a repository.
-        </p>
-        <div class="hero-cta">
-          <a class="cta" href={`${base}playground/`}>Take the tour</a>
-          <a class="cta ghost" href={`${base}install/`}>Install</a>
-        </div>
-        <p class="release">
-          <a href={releaseUrl(release)}>Version {release.version}</a>, {release.date}
-        </p>
+  <div class="wrap">
+    <div class="hero-row">
+    <section class="page-hero">
+      <h1 class="h1">A friendly, fast language for people and their agents.</h1>
+      <p class="lead">
+        iyi is a compiled language written for two readers: the person editing
+        the code and the agent editing it beside them. One rule serves both. A
+        module builds against its dependencies' declarations, never their
+        bodies, so:
+      </p>
+      {/* The three consequences of the rule, as the sentence above lists
+          them, set so they read at a glance. */}
+      <ul class="follows">
+        <li>a build reads less</li>
+        <li>a program carries less</li>
+        <li>a model reads an interface instead of a repository</li>
+      </ul>
+      <div class="btns">
+        <a class="button" href={`${base}install/`}>Install {release.version}</a>
+        <a class="button button--ghost" href={firstHref}>Try it in the browser</a>
       </div>
-      <div class="hero-art">
-        <Image
-          src={mascot}
-          alt="The iyi mascot: a smiling red heart with yellow gloves, waving"
-          width={480}
-          height={450}
-          densities={[1, 2]}
-          loading="eager"
-          decoding="sync"
-          fetchpriority="high"
-        />
-      </div>
-    </div>
-  </section>
 
-  <section class="try">
-    <div class="wrap try-inner">
-      <div class="try-copy">
-        <h2>Try iyi</h2>
-        <p>
+    </section>
+    {/* The mascot, large, beside the one line. The largest thing painted above
+        the fold, so it is eager and asks for priority. */}
+    <div class="hero-art">
+      <Image
+        src={mascot}
+        alt="The iyi mascot: a smiling red heart with yellow gloves, waving"
+        width={280}
+        height={264}
+        densities={[1, 2]}
+        loading="eager"
+        decoding="async"
+        fetchpriority="high"
+      />
+    </div>
+    </div>
+    <div class="rebuild-wrap">
+      <RebuildRace />
+      <p class="small">
+        Module names and the edit are illustrative. The two durations are the
+        measured ones, from the same compiler binary under each set of rules,
+        by a generator that refuses to start the clock until both print the
+        same total.
+      </p>
+    </div>
+
+    <section class="sec">
+      <div class="sec__head">
+        <h2 class="h2">What iyi is for</h2>
+        <p class="p">Four things, and they are one design decision seen from four sides.</p>
+      </div>
+      <div class="grid4">
+        <a class="pillar" href={`${base}why/#dx`}>
+          <span class="big">{loop.claim.value}x</span>
+          <strong class="h3">Quick to rebuild</strong>
+          <span class="p">
+            Change one line in one module and build again. iyi reads the
+            declarations of everything else and none of the bodies.
+          </span>
+          <span class="link red">Why it is fast →</span>
+        </a>
+        <a class="pillar" href={`${base}agents/`}>
+          <span class="big">{pack.tokens_low}–{pack.tokens_high}%</span>
+          <strong class="h3">Made for agents</strong>
+          <span class="p">
+            Fewer prompt tokens for the same edit, because a module's interface
+            is a file and not a convention.
+          </span>
+          <span class="link red">The loop, recorded →</span>
+        </a>
+        <a class="pillar" href={`${base}why/#portability`}>
+          <span class="big"><Measure of="targets" /></span>
+          <strong class="h3">Portable</strong>
+          <span class="p">
+            An iyi program compiles for <Measure of="targets" /> targets, and
+            is run on {ranCount} of them on every build, including {wasm}.
+          </span>
+          <span class="link red">How the playground runs →</span>
+        </a>
+        <a class="pillar" href={`${base}why/#performance`}>
+          <span class="big">{massRatio}x</span>
+          <strong class="h3">Small and quick to start</strong>
+          <span class="p">
+            Native code through LLVM, and a program links only what it uses. A
+            hello world is {massRatio}x smaller than with Crystal's library.
+          </span>
+          <span class="link red">The numbers →</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="sec split">
+      <div class="sec__head">
+        <h2 class="h2">Try iyi</h2>
+        <p class="p">
           It reads like Crystal or Ruby, and builds like a systems language.
           This is the first program of the tour, and the output beside it is
           what the compiler's build of it printed.
         </p>
-        <p>
-          <a href={firstHref}>Run it in the playground</a>
-        </p>
+        <a class="link" href={firstHref}>Run it in the playground →</a>
       </div>
-      <div class="try-run">
+      <div>
         <Sample path={first.path} />
         <div class="console">
-          <div class="console-chrome" aria-hidden="true">
-            <i></i><i></i><i></i>
-            <span class="caption">iyi run {first.path}</span>
+          <div class="console-chrome">
+            <span class="caption">output</span>
+            <a class="copy run-here" href={firstHref}>Run it in the browser ▸</a>
           </div>
           <pre><span class="out">{first.nativeStdout}</span></pre>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  {/* The agent argument, before the Crystal one, because it is the reason
-      this language exists rather than a feature it grew. It is one rule seen
-      from the other side: a build that reads declarations instead of bodies is
-      a model that reads declarations instead of bodies, and the card is what
-      that cost when it was measured. */}
-  <section class="agents" id="agents">
-    <div class="wrap agents-inner">
-      <div class="agents-copy">
-        <p class="label">Written for agents</p>
-        <h2>A model reads the interface, not the repository.</h2>
-        <p class="agents-lede">
-          A module compiles against its dependencies' declarations, never their
-          bodies. That one rule is why a module's interface is a file, and why{" "}
-          <code>iyi mod context</code> can hand an agent the exact surface of
-          every import with no body in it and no repository behind it. The
-          context window is the new compile time, and this is a language that
-          spends it like one.
-        </p>
-        <ul class="checks">
+    {/* The agent argument, before the Crystal one, because it is the reason
+        this language exists rather than a feature it grew. */}
+    <section class="sec" id="agents">
+      <div class="split">
+        <div class="sec__head">
+          <p class="eyebrow">Agent experience (AX)</p>
+          <h2 class="h2">A model reads the interface, not the repository.</h2>
+          <p class="p">
+            A module compiles against its dependencies' declarations, never their
+            bodies. That one rule is why a module's interface is a file, and why{" "}
+            <code>iyi mod context</code> can hand an agent the exact surface of
+            every import with no body in it and no repository behind it.
+          </p>
+          <a class="link" href={`${base}agents/`}>The loop, recorded →</a>
+        </div>
+        <ul class="list checks">
           <li>
-            <strong>Grounding is one command.</strong>{" "}
-            <code>iyi mod context --json</code> prints the surface an edit is
-            allowed to know.
+            <strong>Grounding is one command.</strong>
+            <span class="p"><code>iyi mod context --json</code> prints the surface an edit is allowed to know.</span>
           </li>
           <li>
-            <strong>The verdict is data.</strong> <code>iyi check -f json</code>{" "}
-            answers with the file, the line, the span and the exact replacement
-            when the compiler knows the fix, and <code>iyi fix</code> applies
-            it.
+            <strong>The verdict is data.</strong>
+            <span class="p">
+              <code>iyi check -f json</code> answers with the file, the line,
+              the span and the exact replacement when the compiler knows the
+              fix, and <code>iyi fix</code> applies it.
+            </span>
           </li>
           <li>
-            <strong>The servers are in the binary.</strong>{" "}
-            <code>iyi lsp</code> for an editor and <code>iyi mcp</code> for a
-            harness, both over stdio, both shells around the same front end a
-            build uses.
+            <strong>The servers are in the binary.</strong>
+            <span class="p"><code>iyi lsp</code> for an editor and <code>iyi mcp</code> for a harness, both over stdio.</span>
           </li>
         </ul>
-        <div class="hero-cta">
-          <a class="cta" href={`${base}agents/`}>See the recorded loop</a>
-        </div>
       </div>
-      <Stamped
-        claim={`${pack.tokens_low} to ${pack.tokens_high}% fewer prompt tokens.`}
-        band={`The grounding pack is ${pack.size_low} to ${pack.size_high}% of the size of the sources it replaces, over ${pack.runs} measured runs.`}
-        subject={pack.subject}
-        outcome="win"
-      >
-        <p class="stamp-note">
-          Rounds to green were the model's, and they were tied{" "}
-          {pack.rounds_tied} times and lost {pack.rounds_lost} times. Both
-          readings come off one gate and both are published.
+      <div class="race-wrap">
+        <AgentRace loop={`${base}agents/#loop`} hint="The recorded session →" />
+        <p class="small">
+          A replay of the measured result; the code in the lanes is
+          illustrative. Rounds to green were the model's, tied{" "}
+          {pack.rounds_tied} times and lost {pack.rounds_lost}.{" "}
+          <a href={`${base}agents/`}>How it was measured</a>.
         </p>
-      </Stamped>
-    </div>
-  </section>
+      </div>
+    </section>
 
-  <section class="crystal" id="crystal">
-    <div class="wrap crystal-inner">
-      <div class="crystal-copy">
-        <p class="label">Coming from Crystal?</p>
-        <h2>iyi runs your Crystal code today.</h2>
-        <p class="crystal-lede">
+    <section class="sec split" id="crystal">
+      <div class="sec__head">
+        <p class="eyebrow">Coming from Crystal?</p>
+        <h2 class="h2">iyi runs your Crystal code today.</h2>
+        <p class="p">
           iyi's compiler is Crystal's compiler. Your <code>.cr</code> files
           build unchanged, and <code>iyi build --crystal</code> gives an iyi
           program Crystal's standard library, <code>require</code>, and the
-          shards you already depend on. Nothing to port first, and nothing to
-          give up: blocks, union types, nil-safety and macros are all here.
+          shards you already depend on. Blocks, union types, nil-safety and
+          macros are all here.
         </p>
-        <p class="crystal-lede">
-          The listing here is a Kemal server written as an iyi module, and the
-          console under it is that server answering. What iyi adds is one rule
-          about where things may be written, and the compiler teaches it as you
-          go.
+        <p class="p">
+          The listing is a Kemal server written as an iyi module, and the
+          console under it is that server answering. What iyi adds is one
+          rule about where things may be written, and the compiler teaches it
+          as you go.
         </p>
-        <div class="hero-cta">
-          <a class="cta" href={`${base}learn/`}>Learn the one rule</a>
-          <a class="cta ghost" href={`${base}why/#moved`}>What moved, and why</a>
-        </div>
       </div>
-      <div class="crystal-run">
-        <Quote id="kemal_site" as="source" caption="site.iyi" />
-        <Quote id="kemal_run" as="console" caption="a Kemal server, from an iyi program" />
-      </div>
-    </div>
-  </section>
-
-  <section class="install">
-    <div class="wrap install-inner">
       <div>
-        <h2>Install in one line</h2>
-        <p class="section-sub">
+        <Quote id="kemal_site" as="source" caption="site.iyi" />
+        <Quote id="kemal_run" as="console" caption="console" />
+      </div>
+    </section>
+
+    <section class="sec split">
+      <div class="sec__head">
+        <h2 class="h2">Install in one line</h2>
+        <p class="p">
           The latest release into <code>~/.local</code> on{" "}
           {machines.join(" or ")}, or into <code>%LOCALAPPDATA%</code> on{" "}
           {windows.machine}, with both libraries and the samples. Then hello.
         </p>
-        <p><a href={`${base}install/`}>What the installer does, and the by-hand version</a></p>
+        <a class="link" href={`${base}install/`}>What the installer does, and the by-hand version →</a>
       </div>
+      <div class="install-run">
       <Platform
         id="home-install"
         label="The machine you are installing on"
         posix={machines.join(" / ")}
         windows={windows.machine}
       >
-        <Quote slot="posix" id="install" as="shell" caption="install, then run hello" copy />
-        <Quote
-          slot="windows"
-          id="install_windows"
-          as="shell"
-          caption="install on Windows, then run hello"
-          copy
-        />
+        <Quote slot="posix" id="install" as="shell" caption="sh" copy />
+        <Quote slot="windows" id="install_windows" as="shell" caption="PowerShell" copy />
       </Platform>
-    </div>
-  </section>
+      </div>
+    </section>
 
-  <section class="features">
-    <div class="wrap">
-      <h2>What iyi is for</h2>
-      <p class="section-sub">
-        Four things, and they are one design decision seen from four sides.
-      </p>
-      <ul class="cards">
-        <li class="card">
-          <p class="card-figure">{loop.claim.value}x</p>
-          <h3>Quick to rebuild</h3>
-          <p>
-            Change one line in one module and build again. iyi reads the
-            declarations of everything else and none of the bodies, so the edit
-            loop is {loop.claim.value}x shorter than the same compiler
-            without the rule.
-          </p>
-          <a href={`${base}why/`}>Why it is fast</a>
-        </li>
-        <li class="card">
-          <p class="card-figure">{pack.tokens_low} to {pack.tokens_high}%</p>
-          <h3>Made for agents</h3>
-          <p>
-            Fewer prompt tokens for the same edit, because a module's interface
-            is a file and not a convention. One command grounds an edit in
-            every import's exact surface, <code>iyi check</code> answers as
-            data with suggested edits, and <code>iyi mcp</code> serves it all
-            over the protocol agents speak.
-          </p>
-          <a href={`${base}agents/`}>The loop, recorded</a>
-        </li>
-        <li class="card">
-          <p class="card-figure"><Measure of="targets" /></p>
-          <h3>Portable</h3>
-          <p>
-            An iyi program compiles for <Measure of="targets" /> targets, and is
-            run on {ranCount} of them on every build. One of those is {wasm},
-            which is what the playground on this site uses.
-          </p>
-          <a href={`${base}playground/evidence/`}>How the playground runs</a>
-        </li>
-        <li class="card">
-          <p class="card-figure">{massRatio}x</p>
-          <h3>Small and quick to start</h3>
-          <p>
-            Native code through LLVM, and a program links only what it uses. A
-            hello world is {massRatio}x smaller than the same program with
-            Crystal's library.
-          </p>
-          <a href={`${base}why/`}>The numbers, with the machine they ran on</a>
-        </li>
-      </ul>
-    </div>
-  </section>
 
-  <section class="measured">
-    <div class="wrap">
-      <h2>Measured</h2>
-      <p class="section-sub">
-        One line changed in one of <Measure of="modules" /> modules,{" "}
-        <Measure of="generated" /> lines
-        in all, built by iyi and by the same compiler under Crystal's rules, by
-        a generator that refuses to start the clock until both print the same
-        total. The bars run at real speed.
-      </p>
-      <Stamped
-        claim={loopClaim}
-        band={loopBand}
-        subject={loop.subject}
-        outcome="win"
-      >
-        <DurationChart />
-      </Stamped>
-      <p class="section-sub">
-        The rest of the numbers, binary size and start time among them, are on
-        the <a href={`${base}why/`}>why page</a>, each one a reading off a
-        machine rather than a property of the language.
-      </p>
-    </div>
-  </section>
-
-  <section class="starts">
-    <div class="wrap">
-      <h2>Get started</h2>
-      <ul class="cards starts-cards">
-        {
-          starts.map((s) => (
-            <li class="card">
-              <h3>{s.title}</h3>
-              <p>{s.body}</p>
-              <a href={s.href.startsWith("http") ? s.href : `${base}${s.href}`}>{s.cta}</a>
-            </li>
-          ))
-        }
-      </ul>
-    </div>
-  </section>
+  </div>
 
   <style>
-    section {
-      padding-block: clamp(2.5rem, 5vw, 4.5rem);
+    .eyebrow a {
+      color: inherit;
+      text-decoration: none;
     }
 
-    section h2 {
-      font-size: var(--step-3);
-      margin-block-end: 0.6rem;
+    .hero-row :global(.page-hero) {
+      padding-top: clamp(32px, 4vw, 48px);
     }
 
-    .section-sub {
-      color: var(--graphite);
-      max-width: 62ch;
-      margin-block-end: 1.6rem;
-      font-size: var(--step-0);
-    }
-
-    /* Hero ------------------------------------------------------------- */
-
-    .hero {
-      padding-block: clamp(2.5rem, 6vw, 5rem) clamp(1.5rem, 4vw, 3rem);
-    }
-
-    .hero-inner {
+    .hero-row {
       display: grid;
-      grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-      gap: clamp(1.5rem, 5vw, 4rem);
+      grid-template-columns: minmax(0, 1fr) auto;
       align-items: center;
+      gap: clamp(24px, 4vw, 56px);
     }
 
-    @media (max-width: 52rem) {
-      .hero-inner {
-        grid-template-columns: minmax(0, 1fr);
-      }
-      .hero-art {
-        order: -1;
-        justify-content: flex-start;
-      }
-      .hero-inner .hero-art img {
-        max-width: 9rem;
-      }
-    }
-
-    .hero h1 {
-      font-size: var(--step-5);
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      max-width: 16ch;
-      margin-block-end: 1.1rem;
-    }
-
-    .lede {
-      font-size: var(--step-1);
-      line-height: 1.5;
-      color: var(--graphite);
-      max-width: 48ch;
-      margin: 0 0 1.8rem;
-    }
-
-    .hero-cta {
-      display: flex;
-      gap: 0.8rem;
-      flex-wrap: wrap;
-    }
-
-    .release {
-      margin: 1rem 0 0;
-      font-family: var(--font-mono);
-      font-size: var(--step--2);
-      color: var(--mute);
-    }
-
-    .release a {
-      color: var(--graphite);
-      font-weight: 600;
-    }
-
+    /* Centred on the copy, not on the section's padding above it. */
     .hero-art {
-      display: flex;
-      justify-content: center;
+      padding-top: clamp(32px, 4vw, 48px);
     }
 
-    .hero-art img {
-      width: 100%;
-      max-width: 26rem;
+    .hero-art :global(img) {
+      display: block;
+      width: clamp(200px, 22vw, 280px);
       height: auto;
     }
 
-    /* Try -------------------------------------------------------------- */
-
-    .try {
-      background: var(--raise);
-      border-block: var(--hair) solid var(--hairline);
-    }
-
-    .try-inner {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
-      gap: clamp(1.5rem, 4vw, 3.5rem);
-      align-items: start;
-    }
-
-    @media (max-width: 52rem) {
-      .try-inner {
+    /* On a phone the line is the hero; the mascot is already in the
+     * masthead. */
+    @media (max-width: 760px) {
+      .hero-row {
         grid-template-columns: minmax(0, 1fr);
+      }
+      .hero-art {
+        display: none;
       }
     }
 
-    .try-copy p {
-      color: var(--graphite);
-      max-width: 40ch;
-    }
-
-    .try-run :global(.source) {
-      background: var(--paper);
-    }
-
-    .try-run .console {
-      margin-block-start: 0.9rem;
-    }
-
-    /* Agents ----------------------------------------------------------- */
-
-    /* A band, so the page reads hero, a program, then the argument. The
-     * measurement sits beside the copy rather than under it: the claim and
-     * what it cost are one thing. */
-    .agents {
-      background: var(--raise);
-      border-block: var(--hair) solid var(--hairline);
-    }
-
-    .agents-inner {
-      display: grid;
-      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-      gap: clamp(1.5rem, 4vw, 3.5rem);
-      align-items: start;
-    }
-
-    @media (max-width: 60rem) {
-      .agents-inner {
-        grid-template-columns: minmax(0, 1fr);
-      }
-    }
-
-    .agents h2 {
-      margin-block: 0.4rem 0.8rem;
-      max-width: 30ch;
-    }
-
-    .agents-lede {
-      color: var(--graphite);
-      font-size: var(--step-0);
-      max-width: 54ch;
-      margin-block-end: 1.4rem;
-    }
-
-    .stamp-note {
-      color: var(--graphite);
-      font-size: var(--step--1);
-      max-width: 52ch;
-      margin-block: 0 0.8rem;
-    }
-
-    /* Crystal ---------------------------------------------------------- */
-
-    .crystal {
-      background: var(--brand-soft);
-      border-block-end: var(--hair) solid var(--hairline);
-    }
-
-    .crystal-inner {
-      display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-      gap: clamp(1.5rem, 4vw, 3.5rem);
-      align-items: start;
-    }
-
-    @media (max-width: 52rem) {
-      .crystal-inner {
-        grid-template-columns: minmax(0, 1fr);
-      }
-    }
-
-    .crystal .label {
-      color: var(--brand-deep);
-    }
-
-    .crystal h2 {
-      margin-block: 0.4rem 0.8rem;
-    }
-
-    .crystal-lede {
-      color: var(--graphite);
-      font-size: var(--step-0);
-      max-width: 52ch;
-    }
-
-    .checks {
+    .follows {
       list-style: none;
-      margin: 0 0 1.6rem;
+      margin: 0;
       padding: 0;
-      display: grid;
-      gap: 0.7rem;
-      max-width: 52ch;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 18px;
+      font-size: clamp(16px, 1.5vw, 18px);
+      line-height: 1.5;
+      color: var(--ink);
     }
 
-    .checks li {
-      position: relative;
-      padding-inline-start: 1.6rem;
-      color: var(--graphite);
-      font-size: var(--step--1);
+    .follows li {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
     }
 
-    .checks li::before {
+    .follows li::before {
       content: "";
-      position: absolute;
-      left: 0.1rem;
-      top: 0.45em;
-      width: 0.5rem;
-      height: 0.5rem;
+      flex: none;
+      width: 6px;
+      height: 6px;
+      transform: translateY(-2px);
       border-radius: 50%;
       background: var(--brand);
     }
 
-    .checks strong {
+    .run-here {
+      text-decoration: none;
+    }
+
+    .rebuild-wrap {
+      margin-top: clamp(20px, 3vw, 36px);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .race-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .pillar {
       color: var(--ink);
+      text-decoration: none;
     }
 
-    .crystal-run :global(.source) {
-      background: var(--paper);
+    .pillar:hover {
+      color: var(--ink);
+      background: var(--raise);
     }
 
-    .crystal-run :global(.console) {
-      margin-block-start: 0.9rem;
+    .pillar .p {
+      font-size: 14.5px;
     }
 
-    /* Install ---------------------------------------------------------- */
-
-    .install {
-      border-block-end: var(--hair) solid var(--hairline);
+    .pillar .big :global(.measure-value) {
+      font: inherit;
+      color: inherit;
     }
 
-    .install-inner {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
-      gap: clamp(1.5rem, 4vw, 3.5rem);
-      align-items: center;
-    }
-
-    @media (max-width: 52rem) {
-      .install-inner {
-        grid-template-columns: minmax(0, 1fr);
-      }
-    }
-
-    .install :global(.console pre) {
+    /* The install commands are one line each and are read as lines. */
+    .install-run :global(.console pre) {
       white-space: pre;
       overflow-x: auto;
     }
 
-    /* Cards ------------------------------------------------------------ */
-
-    .cards {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: grid;
-      gap: 1.25rem;
-      grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
-    }
-
-    .card {
-      display: flex;
-      flex-direction: column;
-      gap: 0.55rem;
-      padding: 1.5rem;
-      border: var(--hair) solid var(--hairline);
-      border-radius: var(--radius-lg);
-      background: var(--paper);
-    }
-
-    .card h3 {
-      font-size: var(--step-1);
-    }
-
-    .card p {
-      margin: 0;
-      color: var(--graphite);
-      font-size: var(--step--1);
-      flex: 1;
-    }
-
-    .card > a {
-      font-weight: 600;
-      font-size: var(--step--1);
-      margin-block-start: 0.4rem;
-    }
-
-    .card .card-figure {
-      font-size: var(--step-4);
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      line-height: 1;
-      color: var(--brand);
-      flex: 0 !important;
-    }
-
-    .card .card-figure.mono {
-      font-family: var(--font-mono);
-      font-size: var(--step-1);
-      font-weight: 600;
-      letter-spacing: 0;
-      padding-block: 0.4em;
-    }
-
-    .card-figure :global(.measure-value) {
-      color: inherit;
-      font-family: inherit;
-      font-weight: inherit;
-    }
-
-    /* Measured --------------------------------------------------------- */
-
-    .measured {
-      background: var(--raise);
-      border-block: var(--hair) solid var(--hairline);
-    }
-
-    .measured :global(.stamped) {
-      margin-block: 0.5rem 1.4rem;
-    }
-
-    .starts-cards .card {
-      background: var(--raise);
-      border-color: transparent;
+    .pillar .link {
+      margin-top: auto;
+      padding-top: 8px;
     }
   </style>
 </Page>

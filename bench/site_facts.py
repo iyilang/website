@@ -242,6 +242,65 @@ def bench_modules(readme: str, lines: int) -> int:
     return modules
 
 
+def context_scope() -> dict:
+    """What the context-pack figures were measured on.
+
+    THE BUG THIS EXISTS TO PREVENT. The /agents page set the bench's
+    30-module project beside the pack size and the token saving, as the
+    project they were measured on. `bench/context_pack.py` measures neither
+    there. The pack is measured against the import closure of each sample in
+    its `TARGETS`, and the token runs ground one task on one of those samples.
+    So the scope is read out of the script that takes the measurement, the way
+    the module count is read out of the generator.
+
+    `TARGETS` is a literal, read with `ast` rather than imported, so nothing
+    in that script runs here. The token task's sample is the entry
+    `rounds_arm` passes to `pack_for`. It has to be exactly one entry, and
+    one of the targets, or the two arms are no longer measured on the samples
+    the page names.
+    """
+    import ast
+
+    script = "bench/context_pack.py"
+    tree = ast.parse((REPO / script).read_text(encoding="utf-8"))
+    targets = None
+    tasks: set[str] = set()
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and any(
+            isinstance(name, ast.Name) and name.id == "TARGETS" for name in node.targets
+        ):
+            targets = ast.literal_eval(node.value)
+        if isinstance(node, ast.FunctionDef) and node.name == "rounds_arm":
+            tasks |= {
+                call.args[0].value
+                for call in ast.walk(node)
+                if isinstance(call, ast.Call)
+                and isinstance(call.func, ast.Name)
+                and call.func.id == "pack_for"
+                and call.args
+                and isinstance(call.args[0], ast.Constant)
+            }
+
+    if not isinstance(targets, dict) or not targets:
+        raise SystemExit(
+            f"bench/site_facts.py: `{script}` no longer declares its samples "
+            f"as a literal `TARGETS`, so the site cannot say what the pack "
+            f"was measured on."
+        )
+    if len(tasks) != 1 or not tasks <= targets.keys():
+        raise SystemExit(
+            f"bench/site_facts.py: `{script}`'s rounds arm grounds "
+            f"{sorted(tasks) or 'no literal entry'} with `pack_for`, which is "
+            f"not one of its targets. The site names the sample the token "
+            f"runs were measured on, so it has to be exactly one of them."
+        )
+
+    return {
+        "targets": [{"entry": entry, "imports": list(closure)} for entry, closure in targets.items()],
+        "task": tasks.pop(),
+    }
+
+
 # (key, pattern, group names). A miss is an error, never a default.
 RECORDED_PATTERNS: list[tuple[str, str, tuple[str, ...]]] = [
     ("machine", r"\(([^()]*Ryzen[^()]*)\)", ("name",)),
@@ -498,6 +557,7 @@ def build() -> tuple[dict, list[str]]:
             # README.md names no machine for either, because neither is a
             # duration, so the stamp says so rather than borrowing one.
             "context_pack": {
+                **context_scope(),
                 "size_low": int(raw["context_pack"]["size_low"]),
                 "size_high": int(raw["context_pack"]["size_high"]),
                 "tokens_low": int(raw["context_tokens"]["low"]),

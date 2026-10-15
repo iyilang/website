@@ -21,7 +21,10 @@
  * against the wasm recording there, so a step this page offers is a step that
  * has a page and a recorded run.
  */
+import { Image } from "astro:assets";
 import Measure from "../../components/Measure.astro";
+import TourGrid from "../../components/TourGrid.astro";
+import mascot from "../../assets/mascot.png";
 import Page from "../../layouts/Page.astro";
 import {
   sequence,
@@ -69,6 +72,25 @@ const tour = tourSections.map((section) => ({
 }));
 
 const tourStart = tour[0]?.steps[0];
+
+// A rule's premise as SPEC.md states it, cut to its first three sentences
+// where it runs long: the step's own page carries the whole of it, and the
+// index links there rather than reprinting a paragraph.
+const LONG = 400;
+function excerpt(premise: string): { text: string; cut: boolean } {
+  if (premise.length <= LONG) return { text: premise, cut: false };
+  let at = -1;
+  for (let i = 0; i < 3; i++) {
+    const next = premise.indexOf(". ", at + 1);
+    if (next === -1) return { text: premise, cut: false };
+    at = next;
+  }
+  return { text: premise.slice(0, at + 1), cut: true };
+}
+
+// The steps that ran natively rather than in the browser, named under the
+// grid rather than typed into the note.
+const nativeIds = tourSamples.filter((step) => !runnable(step)).map((step) => step.id);
 if (tourStart === undefined) {
   throw new Error(
     "samples/tour/tour.json laid out no sections, so this page would offer a " +
@@ -132,163 +154,143 @@ const further = [
   title="Learn iyi"
   summary={`${count} steps in order, one rule each. Compile against declarations rather than bodies, write down what you export, own your own names, replace open classes with traits, type a body where it is written, cross a boundary with a generic, keep a macro to one declaration, and return errors as ordinary values.`}
 >
-  <div class="spread">
-    <div class="intro">
-      <p class="label">Learn</p>
-      <h1>{count} steps, one rule each</h1>
-      <p class="lede">
+  <div class="wrap">
+    <section class="page-hero">
+      <p class="eyebrow">
+        <Image src={mascot} alt="" width={20} height={19} densities={[1, 2]} loading="eager" decoding="async" />
+        Learn
+      </p>
+      <h1 class="h1">{count} steps, one rule each</h1>
+      <p class="lead">
         iyi is Crystal with one rule added, and that rule changes enough that
         starting from the syntax would teach you the wrong thing. So these
         steps start from the rule, in the order the rules depend on each other.
       </p>
-      <p>
+      <p class="p">
         Each step opens with the rule in the specification's own words, shows
         the program it is grounded in, breaks the rule on purpose, and prints
         what the compiler said. Every listing is read out of the repository
         when the page is built, and every error is a recording of a real run.
       </p>
-      <p class="start">
-        <a href={first.href}>Start at step one, {first.lesson.data.title}</a>
-      </p>
-      <p class="sideways">
-        Or start with the syntax. <a href={tourStart.href}>The tour</a> is{" "}
-        {tourSamples.length} short programs that run in your browser, from one{" "}
-        <code>puts</code> to tasks and channels.
-      </p>
-    </div>
+      <div class="btns">
+        <a class="button" href={first.href}>Start at step one →</a>
+        <a class="button button--ghost" href={tourStart.href}>Or start with the syntax</a>
+      </div>
+    </section>
 
-    <dl class="evidence to-rail chain">
-      <dt>the path</dt>
-      {
-        steps.map(({ lesson, rules }) => (
-          <dd>
-            <span class="chain-step">{lesson.data.order}</span>
-            <span class="chain-rule">{rules.map((rule) => rule.id).join(" ")}</span>
-          </dd>
-        ))
-      }
-      <dd class="chain-note">
-        Each identifier is the specification's own, and the sentence it states
-        for it is beside the step.
-      </dd>
-    </dl>
-  </div>
+    <section class="sec">
+      <div class="sec__row">
+        <div class="sec__head">
+          <h2 class="h2">The path</h2>
+          <p class="p">
+            Each identifier is the specification's own, and the sentence it
+            states for it is beside the step.
+          </p>
+        </div>
+        <nav class="path" aria-label="Steps">
+          {
+            steps.map(({ lesson, rules }) => (
+              <a href={`#step-${lesson.data.order}`}>
+                <span>{lesson.data.order}</span>
+                {rules.map((rule) => rule.id).join(" ")}
+              </a>
+            ))
+          }
+        </nav>
+      </div>
 
-  <ol class="sequence">
-    {
-      steps.map(({ lesson, href, rules, broken, next }) => (
-        <li class="spread step">
-          <hr class="rule to-wide" />
-
-          <div class="step-body">
-            <p class="label step-index">
-              Step {lesson.data.order} of {steps.length}
-              {lesson.data.order === 1 && <span class="here">start here</span>}
-            </p>
-            <ol class="ticks" aria-hidden="true">
-              {steps.map(({ lesson: other }) => (
-                <li
-                  class:list={[
-                    "tick",
-                    {
-                      done: other.data.order < lesson.data.order,
-                      here: other.data.order === lesson.data.order,
-                    },
-                  ]}
-                />
-              ))}
-            </ol>
-            <h2>
-              <a href={href}>{lesson.data.title}</a>
-            </h2>
-            <p class="step-summary" set:html={inlineMarkdown(lesson.data.summary)} />
-            <p class="step-onward">
-              {
-                next ? (
-                  <>
-                    Then step {next.data.order}, <a href={lessonHref(base, next)}>{next.data.title}</a>.
-                  </>
-                ) : (
-                  <>The last step. The syntax tour follows below.</>
-                )
-              }
-            </p>
-          </div>
-
-          <dl class="evidence to-rail">
-            <dt>teaches</dt>
-            {rules.map((rule) => (
-              <dd>
-                <span class="rule-id">{rule.id}</span>
-                <span class="premise" set:html={inlineMarkdown(rule.premise)} />
-              </dd>
-            ))}
-            <dt>grounded in</dt>
-            <dd>{lesson.data.sample}</dd>
-            <dt>breaks</dt>
-            {broken.map((entry) => (
-              <dd class="breaks">{entry.title}</dd>
-            ))}
-          </dl>
-        </li>
-      ))
-    }
-  </ol>
-
-  <div class="spread">
-    <section class="after to-wide">
-      <hr class="rule" />
-      <p class="label">The second track</p>
-      <h2 class="after-head">The syntax, in {tourSamples.length} short programs</h2>
-      <p class="after-body">
-        The rules are what make iyi a different language from the one it
-        forked. The tour is everything else: the syntax, in the order a person
-        learns a language, each step a program that runs in your browser from the
-        module the compiler built for it. Read the rules first and the tour
-        reads as confirmation. Read the tour first and the rules read as the
-        reason.
-      </p>
-
-      <ol class="tour">
+      <ol class="steps">
         {
-          tour.map((section) => (
-            <li class="tour-section">
-              <p class="tour-title">{section.title}</p>
-              <p class="tour-blurb">{section.blurb}</p>
-              <p class="tour-steps">
-                {section.steps.map((step) => (
-                  <a class:list={["tour-step", { recorded: !step.runs }]} href={step.href}>
-                    {step.id}
-                  </a>
+          steps.map(({ lesson, href, rules, broken }) => (
+            <li class="step" id={`step-${lesson.data.order}`}>
+              <div class="step-n">
+                <b>{lesson.data.order}</b>
+                {rules.map((rule) => (
+                  <span class="chip chip--red">{rule.id}</span>
                 ))}
-              </p>
+              </div>
+              <div class="step-body">
+                <h3 class="h3">
+                  <a href={href}>{lesson.data.title}</a>
+                </h3>
+                <p class="p" set:html={inlineMarkdown(lesson.data.summary)} />
+                {rules.map((rule) => {
+                  const shown = excerpt(rule.premise);
+                  return (
+                    <p class="rule-quote">
+                      <Fragment set:html={inlineMarkdown(shown.text)} />
+                      {shown.cut && (
+                        <>
+                          {" "}
+                          <a href={href}>The full rule →</a>
+                        </>
+                      )}
+                    </p>
+                  );
+                })}
+                <div class="meta">
+                  <span>
+                    <b>grounded in</b>
+                    <code>{lesson.data.sample}</code>
+                  </span>
+                  <span>
+                    <b>breaks</b>
+                    {broken.map((entry) => entry.title).join(" · ")}
+                  </span>
+                </div>
+              </div>
             </li>
           ))
         }
       </ol>
-
-      <p class="after-note">
-        A step set in the quieter face ran natively rather than in the browser:
-        tasks and channels have no wasm target yet, so those two pages show
-        what the program printed on the machine the recording names.
-      </p>
     </section>
 
-    <section class="after to-wide">
-      <hr class="rule" />
-      <p class="label">And the rest of the samples</p>
-      <p class="after-body">
-        Beyond both tracks, <code>samples/iyi</code> holds{" "}
-        <Measure of="samples" /> programs, each written to document a part of
-        the design rather than to show off. The samples no step is grounded
-        in are the ones to read next, and each of them runs here too:
-      </p>
-      <ul class="further">
+    <section class="sec">
+      <div class="sec__head">
+        <p class="eyebrow">The second track</p>
+        <h2 class="h2">The syntax, in {tourSamples.length} short programs</h2>
+        <p class="p">
+          The rules are what make iyi a different language from the one it
+          forked. The tour is everything else, in the order a person learns a
+          language, each program running in your browser. Read the rules first
+          and the tour reads as confirmation. Read the tour first and the rules
+          read as the reason.
+        </p>
+      </div>
+      <TourGrid variant="chips" heading="h3" />
+      <div class="track-foot">
+        {
+          nativeIds.length > 0 ? (
+            <span class="small">
+              <em class="key">native</em> {nativeIds.join(" and ")}{" "}
+              {nativeIds.length === 1 ? "has" : "have"} no wasm target yet, so{" "}
+              {nativeIds.length === 1 ? "it shows" : "those show"} what the
+              program printed natively.
+            </span>
+          ) : (
+            <span />
+          )
+        }
+        <a class="button" href={tourStart.href}>Start the tour at {tourStart.id} →</a>
+      </div>
+    </section>
+
+    <section class="sec">
+      <div class="sec__head">
+        <p class="eyebrow">And the rest of the samples</p>
+        <p class="p">
+          Beyond both tracks, <code>samples/iyi</code> holds{" "}
+          <Measure of="samples" /> programs, each written to document a part
+          of the design. The ones no step is grounded in are the ones to read
+          next:
+        </p>
+      </div>
+      <ul class="list">
         {
           further.map((sample) => (
             <li>
               <a href={sample.href}><code>{sample.name}</code></a>
-              <span class="further-blurb">{sample.blurb}</span>
+              <span class="p">{sample.blurb}</span>
             </li>
           ))
         }
@@ -298,303 +300,145 @@ const further = [
 </Page>
 
 <style>
-  .intro {
-    padding-block: 3.2rem 0.6rem;
-  }
-
-  .intro h1 {
-    margin-block: 0.5rem 1.1rem;
-  }
-
-  .lede {
-    font-size: var(--step-1);
-    line-height: var(--lead-snug);
-    color: var(--graphite);
-  }
-
-  /* The one obvious way in. A path with no marked entrance is a directory. */
-  .start {
-    margin-block: 1.6rem 0;
-    font-size: var(--step-1);
-  }
-
-  .start a {
-    text-decoration: none;
-    border-bottom: 2px solid var(--signal);
-    padding-block-end: 2px;
-  }
-
-  /* The whole walk in the rail: the step numbers and the rule each one takes,
-   * in order, so the shape of the path is legible before any of it is read. */
-  .chain {
-    padding-block-start: 3.9rem;
-  }
-
-  .chain dd {
-    display: flex;
-    gap: 0.7rem;
-    margin-block-end: 0.3rem;
-  }
-
-  .chain-step {
-    color: var(--mute);
-  }
-
-  .chain-rule {
-    color: var(--ink);
-    font-weight: 600;
-  }
-
-  .chain dt + dt,
-  .chain dd + dt {
-    margin-block-start: 1.1rem;
-  }
-
-  .chain-note {
-    color: var(--graphite);
-  }
-
-  .sequence {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  /* `.spread` makes each step a grid, so the marker is gone and the number is
-   * rendered instead. That is deliberate: the number is content here, taken
-   * from the lesson's frontmatter, not a browser's list decoration. */
-  .step {
-    padding-block-end: 0.4rem;
-  }
-
-  .step > .rule {
-    margin-block: 2.4rem 1.5rem;
-  }
-
-  .step-index {
-    margin: 0 0 0.45rem;
-  }
-
-  /* The entrance, marked in the one colour this site spends on a caveat, used
-   * here for the one thing a reader has to see first. */
-  .here {
-    color: var(--signal);
-    margin-inline-start: 0.7rem;
-  }
-
-  /* Position in the path, drawn as instrument ticks. Structural: it is the
-   * `order` in the file, and it is not a claim about what has been read. */
-  .ticks {
-    display: flex;
-    gap: 0.32rem;
-    list-style: none;
-    margin: 0 0 0.9rem;
-    padding: 0;
-  }
-
-  .tick {
-    width: 1.6rem;
-    height: var(--hair);
-    background: var(--track);
-  }
-
-  .tick.done {
-    background: var(--hairline);
-  }
-
-  .tick.here {
-    height: 3px;
-    background: var(--ink);
-  }
-
-  .step h2 {
-    font-size: var(--step-2);
-    margin-block-end: 0.55rem;
-  }
-
-  .step h2 a {
-    text-decoration: none;
-    border-bottom: var(--hair) solid var(--hairline);
-    padding-block-end: 1px;
-  }
-
-  .step h2 a:hover {
-    border-bottom-color: var(--signal);
-  }
-
-  .step-summary {
-    max-width: 58ch;
-    color: var(--graphite);
-    margin-block-end: 0;
-  }
-
-  /* Each step hands off to the next here as well as at the foot of the lesson,
-   * because the index is where a reader decides whether this is a path. */
-  .step-onward {
-    margin-block: 0.9rem 0;
-    max-width: 58ch;
-    font-family: var(--font-mono);
-    font-size: var(--step--2);
-    color: var(--mute);
-  }
-
-  .step-onward a {
-    color: var(--graphite);
-  }
-
-  .step .evidence {
-    margin-block: 0.35rem 0;
-  }
-
-  .rule-id {
-    display: block;
-    color: var(--ink);
-    font-weight: 600;
-  }
-
-  .premise {
-    display: block;
-  }
-
-  .breaks {
-    color: var(--signal-deep);
-  }
-
-  @media (max-width: 62rem) {
-    .chain {
-      padding-block-start: 1.6rem;
-    }
-
-    .step .evidence {
-      margin-block-start: 1.1rem;
-    }
-  }
-
-  /* The other way in, under the one obvious way in. Quieter than `.start`,
-   * because a reader who wants the rules should not have to choose twice. */
-  .sideways {
-    margin-block: 1.1rem 0;
-    max-width: 58ch;
-    color: var(--graphite);
-  }
-
-  /* The end of the path. A walk should say where it goes next, and the answer
-   * is the other track rather than a directory this site does not publish. */
-  .after {
-    margin-block: 3rem 1rem;
-  }
-
-  .after .label {
-    margin-block: 1.3rem 0.8rem;
-  }
-
-  .after-head {
-    font-size: var(--step-2);
-    margin-block: 0 0.9rem;
-  }
-
-  .after-body {
-    margin: 0;
-    max-width: var(--measure);
-    color: var(--graphite);
-  }
-
-  /* The tour, by section. A section is a row: what it covers, then its steps
-   * as the names of the programs, because the program's name is what a reader
-   * will be looking at on the page it links to. */
-  .tour {
-    list-style: none;
-    margin: 2rem 0 0;
-    padding: 0;
-  }
-
-  .tour-section + .tour-section {
-    margin-block-start: 1.6rem;
-    border-top: var(--hair) solid var(--track);
-    padding-block-start: 1.6rem;
-  }
-
-  .tour-title {
-    margin: 0;
-    font-weight: 600;
-  }
-
-  .tour-blurb {
-    margin: 0.25rem 0 0;
-    max-width: var(--measure);
-    color: var(--graphite);
-  }
-
-  .tour-steps {
+  .path {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.45rem 1rem;
-    margin: 0.7rem 0 0;
+    gap: 6px;
+  }
+
+  .path a {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 9px;
+    border: var(--hair) solid var(--hairline);
+    background: var(--card);
     font-family: var(--font-mono);
-    font-size: var(--step--2);
-  }
-
-  .tour-step {
-    color: var(--graphite);
-    text-decoration: none;
-    border-bottom: var(--hair) solid var(--hairline);
-    padding-block-end: 1px;
-  }
-
-  .tour-step:hover,
-  .tour-step:focus-visible {
+    font-size: 12.5px;
     color: var(--ink);
-    border-bottom-color: var(--signal);
-  }
-
-  /* A step the browser's target cannot run. Set quieter rather than marked
-   * with a badge: the page says what it means once, under the list. */
-  .tour-step.recorded {
-    color: var(--mute);
-    border-bottom-style: dotted;
-  }
-
-  .after-note {
-    margin-block: 1.4rem 0;
-    max-width: var(--measure);
-    font-size: var(--step--1);
-    color: var(--mute);
-  }
-
-  .further {
-    list-style: none;
-    margin: 1.2rem 0 0;
-    padding: 0;
-    display: grid;
-    gap: 0.9rem;
-  }
-
-  .further li {
-    display: grid;
-    /* The floor is the longest sample name plus room, so a name never breaks
-     * mid-token and the blurbs line up as a column a reader can scan. */
-    grid-template-columns: minmax(0, 16ch) minmax(0, 1fr);
-    gap: 0.2rem var(--gutter);
-    align-items: baseline;
-  }
-
-  .further a {
     text-decoration: none;
-    border-bottom: var(--hair) solid var(--hairline);
-    padding-block-end: 1px;
   }
 
-  .further a:hover {
-    border-bottom-color: var(--signal);
+  .path a:hover {
+    border-color: var(--mute);
+    color: var(--ink);
   }
 
-  .further-blurb {
+  .path a span {
+    color: var(--mute);
+  }
+
+  .steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .step {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 20px;
+    padding: 22px;
+    border-radius: var(--radius-lg);
+    border: var(--hair) solid var(--hairline);
+    background: var(--card);
+    scroll-margin-top: 80px;
+  }
+
+  .step-n {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .step-n b {
+    font: 500 28px var(--font-mono);
+    line-height: 1;
+  }
+
+  .step-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .step-body h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .step-body h3 a:hover {
+    color: var(--brand-deep);
+  }
+
+  .rule-quote {
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: var(--raise);
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--ink);
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 20px;
+    font-size: 13px;
     color: var(--graphite);
   }
 
-  @media (max-width: 42rem) {
-    .further li {
+  .meta span {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .meta b {
+    font-weight: 500;
+    color: var(--mute);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 599px) {
+    .step {
       grid-template-columns: minmax(0, 1fr);
+      gap: 10px;
     }
+    .step-n {
+      flex-direction: row;
+      align-items: baseline;
+      gap: 10px;
+    }
+  }
+
+  .list a {
+    text-decoration: none;
+  }
+
+  .track-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .key {
+    margin-right: 6px;
+    font-style: normal;
+    font-size: 10.5px;
+    padding: 1px 6px;
+    border-radius: 5px;
+    background: var(--warn-soft);
+    color: var(--warn);
+    font-family: var(--font-mono);
   }
 </style>

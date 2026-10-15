@@ -1,150 +1,160 @@
 /* iyi design tokens.
  *
- * One accent, taken from the mascot: the heart is red and the gloves are
- * yellow, and the page uses the red for anything you can act on and the yellow
- * only where the mascot stands. Everything else is a ground, a near-black or
- * near-white ink, and a few greys. The reasoning is in doc/ART-DIRECTION.md.
+ * One accent, taken from the mascot: the heart is red, and the page uses the
+ * red for anything you can act on. A green says a build or a run came back
+ * clean and an amber says it came back with something to read; neither is
+ * decoration. Everything else is a warm near-black or white ground, an ink,
+ * and a few warm greys. The reasoning is in doc/ART-DIRECTION.md.
  *
  * TWO SCHEMES, ONE SET OF LITERALS. Every colour this site draws with is
- * declared once below as a literal hex, under a name that says which scheme it
+ * declared once below as a literal, under a name that says which scheme it
  * belongs to. The dark scheme is then switched on by aliasing, never by a
  * second literal.
  *
  * That is not a style preference, it is what keeps the gate honest.
  * `scripts/contrast.mjs` reads this file with a regex for `--name: #hex;` into
- * a flat map. A dark value written the obvious way, `--paper: #14141a` inside
- * a media query, is the LAST `--paper: #hex` in the file, so the gate would
+ * a flat map. A dark value written the obvious way, `--paper: #0a0908` inside
+ * a selector, is the LAST `--paper: #hex` in the file, so the gate would
  * quietly measure the dark palette, print it under the light palette's names,
- * and report a green run for a set of pairs nobody declared. The site's own
- * argument is that a figure has to be checkable; a palette that defeats its
- * own checker is the same failure in the file that defines the colours.
+ * and report a green run for a set of pairs nobody declared.
+ *
+ * Separators and soft grounds are written as the solid colour they composite
+ * to over the page, not as an alpha. An alpha is invisible to the gate, and a
+ * hairline that changes with whatever it happens to sit on is not one colour.
  */
 
 :root {
-  /* Both schemes are drawn. The browser paints form controls, scrollbars and
-   * the caret to match, which is the whole point of declaring it: without it
-   * a dark page keeps a white scrollbar and a light-mode text caret. */
   color-scheme: light dark;
 
   /* Light ---------------------------------------------------------------- */
 
   --paper: #ffffff;
-  --raise: #f7f7f8;
-  --ink: #1c1c1e;
-  --graphite: #4d4f53;
-  --mute: #676a6f;
-  --hairline: #e3e4e8;
-  --track: #eceef1;
+  --raise: #f6f5f3;
+  --card: #ffffff;
+  --code: #f8f7f5;
+  --ink: #0e0c0b;
+  --graphite: #4a4540;
+  --mute: #746d67;
+  --hairline: #e8e7e6;
+  --track: #e8e7e6;
 
-  /* The mascot's red, and a deeper cut of it for text that has to pass AA on
-   * white. --signal is what the measurement components call it: a loss and a
-   * link get the same colour, because the site has one accent. */
-  --brand: #d1333d;
-  --brand-deep: #ad1f29;
-  --brand-soft: #fdeeee;
+  /* The mascot's red. --brand fills and draws figures, --brand-deep is the
+   * cut that passes AA as running text, and --on-brand is the label on a
+   * filled red control. --signal is what the measurement components call the
+   * accent: a loss and a link get the same colour, because there is one. */
+  --brand: #e5203a;
+  --brand-deep: #c8102e;
+  --brand-soft: #fdeff1;
+  --on-brand: #ffffff;
   --glove: #ecb643;
   --signal: var(--brand-deep);
   --signal-deep: #8a151d;
 
+  --ok: #167d3b;
+  --ok-soft: #e8f2ec;
+  --warn: #9a5b00;
+  --warn-soft: #f7f0e6;
+
   /* A control's own edge, and the only thing this token is for. WCAG 1.4.11
-   * asks a non-text control's boundary to stand off its ground by the same
-   * margin a large glyph would, and --hairline does not: it is a separator
-   * between two areas of the page, which 1.4.11 exempts, and it is drawn far
-   * too faint to serve as the edge of a button. Copy, ghost CTA, declaration
-   * toggle, replay and the menu button all draw with this instead, so a
-   * separator and a control edge stopped being the same colour. */
-  --boundary: #85888f;
+   * asks a non-text control's boundary to stand off its ground, which a
+   * separator does not have to. Copy, ghost button, tabs and the masthead's
+   * two controls draw with this; a separator draws with --hairline. */
+  --boundary: #8d8c8b;
+
+  /* The masthead is translucent over the page it scrolls above. */
+  --masthead: rgba(255, 255, 255, 0.78);
+
+  /* The replay panels are lit instruments in either scheme: a frame that
+   * catches the light along its top edge and a shadow that lifts it off the
+   * page. The two are the only gradient and the only drop shadow on the site. */
+  --panel-frame: linear-gradient(180deg, rgba(24, 14, 8, 0.22), rgba(24, 14, 8, 0.1));
+  --panel-shadow: 0 1px 2px rgba(24, 14, 8, 0.06), 0 30px 70px -30px rgba(40, 20, 10, 0.28);
+  --lift: 0 1px 2px rgba(0, 0, 0, 0.12);
 
   /* Dark ----------------------------------------------------------------- */
 
-  /* Not an inversion. An inverted white is a grey the eye reads as a smudge,
-   * and an inverted accent is a different hue. The grounds are near-black with
-   * the same cool cast the light greys have, and the accent is lightened until
-   * it carries the same weight against a dark ground that #d1333d carries
-   * against white: --brand-dark is the display and fill red, --brand-deep-dark
-   * the one that has to pass AA as running text, exactly as in the light
-   * scheme, so no component has to know which scheme it is in. */
-  --paper-dark: #141418;
-  --raise-dark: #1d1d23;
-  --ink-dark: #f0f0f2;
-  --graphite-dark: #c3c5cb;
-  --mute-dark: #9ba0a8;
-  --hairline-dark: #33343c;
-  --track-dark: #2b2c33;
+  /* Warm, not neutral: the grounds carry the same brown cast as the greys,
+   * so the red reads as part of the palette rather than laid on top of it. */
+  --paper-dark: #0a0908;
+  --raise-dark: #100e0c;
+  --card-dark: #14110f;
+  --code-dark: #0e0c0b;
+  --ink-dark: #f4f1ee;
+  --graphite-dark: #a49d96;
+  --mute-dark: #837d76;
+  --hairline-dark: #1e1b19;
+  --track-dark: #1e1b19;
 
-  --brand-dark: #f4636d;
-  --brand-deep-dark: #ff8f96;
-  --brand-soft-dark: #2b171a;
+  --brand-dark: #df3228;
+  --brand-deep-dark: #ff6157;
+  --brand-soft-dark: #210e0c;
   --glove-dark: #f0c25e;
   --signal-deep-dark: #ffb3b8;
-  --boundary-dark: #6b6d76;
+
+  --ok-dark: #5fd98a;
+  --ok-soft-dark: #142218;
+  --warn-dark: #f5b451;
+  --warn-soft-dark: #2b2112;
+
+  --boundary-dark: #66625f;
+
+  --masthead-dark: rgba(10, 9, 8, 0.72);
+  --panel-frame-dark: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05) 45%, rgba(255, 255, 255, 0.03));
+  --panel-shadow-dark: 0 40px 100px -40px rgba(0, 0, 0, 0.6);
 
   /* Contrast is not recorded here. `scripts/contrast.mjs` computes every pair
    * these tokens are used in on every build and fails under the floor the
-   * pair's role requires. It exists because this comment once carried five
-   * ratios and four of them were wrong. Both schemes are gated; a dark palette
-   * that is not gated is the second design this file used to refuse. */
+   * pair's role requires. Both schemes are gated. */
 
-  --font-sans: "Figtree Variable", "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: "Mona Sans Variable", "Mona Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-text: var(--font-sans);
-  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* Fluid scale, ratio 1.25, with a bigger step at the hero. */
+  /* The scale is the redesign's, in px where it names px: the headings are
+   * fluid between a phone and a 1160px page, body copy is fixed. */
   --step--2: 0.8125rem;
-  --step--1: 0.9rem;
-  --step-0: 1.0625rem;
-  --step-1: clamp(1.2rem, 1.1rem + 0.4vw, 1.33rem);
-  --step-2: clamp(1.45rem, 1.28rem + 0.7vw, 1.66rem);
-  --step-3: clamp(1.8rem, 1.5rem + 1.2vw, 2.2rem);
-  --step-4: clamp(2.2rem, 1.6rem + 2.6vw, 3rem);
-  --step-5: clamp(2.6rem, 1.4rem + 4.6vw, 4rem);
+  --step--1: 0.875rem;
+  --step-0: 1rem;
+  --step-1: 1.25rem;
+  --step-2: clamp(1.5rem, 1.2rem + 1.2vw, 2rem);
+  --step-3: clamp(1.875rem, 1.2rem + 2.6vw, 2.875rem);
+  --step-4: clamp(2.25rem, 1.3rem + 3.8vw, 3.75rem);
+  --step-5: clamp(2.25rem, 1.3rem + 3.8vw, 3.75rem);
 
-  /* The reading measure, the evidence rail beside it, and the page width. */
   --measure: 68ch;
   --rail: 21ch;
   --gutter: 2.25rem;
-  --edge: 1.5rem;
-  --page: 72rem;
+  --edge: 1.25rem;
+  --page: 70rem;
 
-  --lead-tight: 1.12;
+  --lead-tight: 1.04;
   --lead-snug: 1.3;
   --lead-body: 1.6;
 
   --hair: 1px;
-  --radius: 8px;
-  --radius-lg: 14px;
+  --radius: 10px;
+  --radius-lg: 16px;
   --tittle: 4px;
   --quick: 150ms ease;
 }
 
 /* The scheme switch, and the whole of it. Nothing in either block below is a
- * colour: every value is one of the literals above, so a reader can see at a
- * glance that the dark scheme adds no fourteenth grey nobody gated. The mascot
- * is cut out of its background and the code is set in weight rather than hue,
- * which is why one drawing serves both grounds.
+ * colour: every value is one of the literals above.
  *
- * THE SYSTEM DECIDES, AND THE READER CAN OVERRULE IT. The first block is the
- * default and needs no script: whatever the machine prefers is what the page
- * is. The second is the override the masthead's switch writes onto `<html>`,
- * and `:not([data-theme="light"])` on the first is what lets that switch turn
- * the dark scheme back off on a machine that prefers dark.
+ * DARK IS THE DEFAULT ON A SCREEN, and the reader can turn it off. The first
+ * block needs no script, so a reader with scripts blocked gets the dark page.
+ * The masthead's switch writes `data-theme="light"` onto `<html>` and
+ * remembers it, and `:not([data-theme="light"])` is what lets it.
  *
- * The alias list is written twice, which is the price of both of those being
- * true at once. A media query cannot be OR'd with an attribute selector in one
- * rule, and the alternatives are worse: resolving the preference in a script
- * and writing the attribute always would leave a reader with scripts blocked
- * on the light palette whatever their machine prefers, and a second set of
- * literals would defeat the gate for the reason the header explains.
- *
- * `screen and` is load bearing on both. A print media query matches the
- * reader's colour-scheme preference too, so without it a reader who prefers
- * dark and hits print gets near-black pages: a lesson printed as a solid block
- * of toner. Pinning both switches to screens hands `print.css` the light
- * palette with no third set of values to keep honest. */
-@media screen and (prefers-color-scheme: dark) {
+ * `screen` is load bearing. A print is the light palette whatever the screen
+ * shows, so a lesson is never printed as a solid block of toner, and
+ * `print.css` needs no third set of values to keep honest. */
+@media screen {
   :root:not([data-theme="light"]) {
     --paper: var(--paper-dark);
     --raise: var(--raise-dark);
+    --card: var(--card-dark);
+    --code: var(--code-dark);
     --ink: var(--ink-dark);
     --graphite: var(--graphite-dark);
     --mute: var(--mute-dark);
@@ -156,28 +166,16 @@
     --brand-soft: var(--brand-soft-dark);
     --glove: var(--glove-dark);
     --signal-deep: var(--signal-deep-dark);
+
+    --ok: var(--ok-dark);
+    --ok-soft: var(--ok-soft-dark);
+    --warn: var(--warn-dark);
+    --warn-soft: var(--warn-soft-dark);
+
     --boundary: var(--boundary-dark);
-
-    color-scheme: dark;
-  }
-}
-
-@media screen {
-  :root[data-theme="dark"] {
-    --paper: var(--paper-dark);
-    --raise: var(--raise-dark);
-    --ink: var(--ink-dark);
-    --graphite: var(--graphite-dark);
-    --mute: var(--mute-dark);
-    --hairline: var(--hairline-dark);
-    --track: var(--track-dark);
-
-    --brand: var(--brand-dark);
-    --brand-deep: var(--brand-deep-dark);
-    --brand-soft: var(--brand-soft-dark);
-    --glove: var(--glove-dark);
-    --signal-deep: var(--signal-deep-dark);
-    --boundary: var(--boundary-dark);
+    --masthead: var(--masthead-dark);
+    --panel-frame: var(--panel-frame-dark);
+    --panel-shadow: var(--panel-shadow-dark);
 
     color-scheme: dark;
   }
