@@ -43,11 +43,23 @@ const die = (message) => {
 // report a hole, how people are expected to behave, whose code this is.
 // `blurb` is the one sentence of ours on the index, and it says what the
 // document is, never what it says.
+//
+// `name` is the page's title in a results list and a browser tab, which the
+// document's own first heading is a poor one for: NOTICE.md opens with
+// "Crystal Programming Language", the right heading for a notice about
+// Crystal's code and the wrong title for a page on this site. The heading
+// stays the page's heading; the document is published whole.
+//
+// `indexed` is false for the two documents whose text is not this project's
+// to rank for: the Contributor Covenant is published on thousands of sites
+// word for word, and the notice is Crystal's copyright and a list of other
+// people's libraries. Both stay published and linked; neither is put forward
+// as a search result, and astro.config.mjs keeps them out of the sitemap.
 const DOCUMENTS = [
-  { id: "contributing", file: "CONTRIBUTING.md", blurb: "What a change to this repository is expected to come with." },
-  { id: "security", file: "SECURITY.md", blurb: "Where a vulnerability goes, and which of the two trackers is the right one." },
-  { id: "conduct", file: "CODE_OF_CONDUCT.md", blurb: "The Contributor Covenant, and the address that enforces it here." },
-  { id: "notice", file: "NOTICE.md", blurb: "Crystal's copyright, the license, and every library the compiler links." },
+  { id: "contributing", file: "CONTRIBUTING.md", name: "Contributing to iyi", indexed: true, blurb: "What a change to this repository is expected to come with." },
+  { id: "security", file: "SECURITY.md", name: "Reporting a security vulnerability in iyi", indexed: true, blurb: "Where a vulnerability goes, and which of the two trackers is the right one." },
+  { id: "conduct", file: "CODE_OF_CONDUCT.md", name: "iyi code of conduct", indexed: false, blurb: "The Contributor Covenant, and the address that enforces it here." },
+  { id: "notice", file: "NOTICE.md", name: "iyi license and notices", indexed: false, blurb: "Crystal's copyright, the license, and every library the compiler links." },
 ];
 
 const commit = execFileSync("git", ["-C", repo, "rev-parse", "HEAD"], {

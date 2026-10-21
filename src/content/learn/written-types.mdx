@@ -1,7 +1,9 @@
 ---
 title: What a module writes down
+searchTitle: "Typed exports in iyi: what a module writes down"
 order: 2
 summary: If a consumer compiles against declarations, the declarations have to be complete. So an exported name carries full parameter and return types, and everything inside the module goes on inferring.
+description: "An exported iyi name writes down its full parameter and return types, so consumers compile against declarations. Inside a module, types are inferred."
 rule: R-2
 sample: samples/iyi/calc.iyi
 breaks: r2-missing-return-type

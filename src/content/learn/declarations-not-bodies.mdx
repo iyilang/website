@@ -1,7 +1,9 @@
 ---
 title: Delete the library, build again
+searchTitle: "Separate compilation in iyi: delete the library, build again"
 order: 1
 summary: A module is the unit of compilation, and a consumer compiles against what its imports declare rather than against what they do. Build once keeping each module's artifact, delete the library's source, and build again.
+description: "In iyi a module compiles against what its imports declare, not what they do. Build once, delete the library's source, and build again."
 rule: R-1
 sample: samples/iyi/modules.iyi
 breaks: r1-import-cycle

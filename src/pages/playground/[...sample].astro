@@ -37,7 +37,7 @@ import Page from "../../layouts/Page.astro";
 import Playground from "../../components/Playground.astro";
 import type { TourStep } from "../../playground/samples";
 import type { SampleEntry } from "../../playground/entry";
-import { curatedSamples, tourSamples } from "../../playground/samples";
+import { curatedSamples, searchOf, tourSamples } from "../../playground/samples";
 
 /* Eager because this runs in node during the static build and every route
  * needs one of these. Astro never sends a frontmatter import to a browser, so
@@ -67,7 +67,7 @@ interface Props {
 }
 
 const { sample } = Astro.props as Props;
-const runs = "wasm" in sample;
+const search = searchOf(sample);
 
 /* The slice for this sample. Missing is fatal rather than silently absent: a
  * page rendered without it would carry an editor that cannot tell whether the
@@ -85,12 +85,8 @@ if (entry === undefined) {
 ---
 
 <Page
-  title={`${sample.id}, from the tour`}
-  summary={
-    runs
-      ? `${sample.path}, cross-compiled to wasm32-wasi by the iyi compiler and executed on this page.`
-      : `${sample.path}, and what it printed when the iyi compiler ran it natively.`
-  }
+  title={search.title}
+  summary={search.description}
 >
   <Playground sample={sample} entry={entry} />
 
