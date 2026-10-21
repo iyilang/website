@@ -45,9 +45,10 @@ cite exists, in this tree or in iyi's.
 
 `records/` holds what only a machine with the compiler can produce: the wasm
 modules the playground runs, the diagnostics the break-this-rule exercises
-show, the agent loop the agents page is a transcript of, and the syntax
-highlighting of every listing. They are committed, and they are evidence about
-**a release**, not about somebody's checkout.
+show, the agent loop the agents page is a transcript of, the syntax
+highlighting of every listing, and the standard library's surface the
+reference under `/reference/` is cut from. They are committed, and they are
+evidence about **a release**, not about somebody's checkout.
 
 That is what makes them checkable without making the build brittle. Every
 recorder refuses to run against anything but the tag CHANGELOG.md states, and
@@ -74,6 +75,16 @@ wasi-sdk 24, not a later one: the modules are linked for `wasm32-wasi`, the
 target README.md publishes, and wasi-sdk renamed that sysroot to
 `wasm32-wasip1` and dropped the old name afterwards. `record:wasm` refuses one
 without that sysroot by name rather than failing at the linker.
+
+`records/stdlib.json` is what `iyi doc` printed for every module directly
+under `src/std/` and every type `iyi doc prelude` lists, with the digest of
+each source. `scripts/stdlib.mjs` refuses it on the build when the release
+ships a module it does not cover or a file it was not printed from, then reads
+each module's header comment out of the tag (no compiler output carries it)
+and writes `src/generated/stdlib.json`. `record:stdlib` needs only the
+compiler, so the release's own binary will do: point `IYI_BUILD` at the `bin/`
+of an unpacked release, `iyi` or `iyi.exe`, and `IYI_REPO` at a worktree at
+its tag.
 
 `records/agent/` is the second thing this repository authors in iyi: four
 modules, left broken on purpose, that `record:agent` takes to green with the

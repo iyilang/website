@@ -17,6 +17,7 @@ import proofs from "../generated/proofs.json";
 import { SPELLED } from "../lib/lessons";
 import agent from "../../records/agent.json";
 import readme from "../generated/readme.json";
+import { reference } from "../lib/reference";
 
 export const GET: APIRoute = async ({ site }) => {
   const origin = (site ?? new URL("https://iyi.dev")).href.replace(/\/$/, "");
@@ -135,6 +136,7 @@ an iyi module; iyi consumes Crystal, not the other way around.
 - [Home](${origin}/): the one line, a listing that runs, the Crystal section.
 - [Why iyi](${origin}/why/): the four sides, each with its measurement and machine.
 - [Learn](${origin}/learn/): ${SPELLED[lessons.length] ?? lessons.length} lessons on the rule, each running a real program.
+- [Reference](${origin}/reference/): the standard library, ${reference.prelude.length} prelude types and ${reference.modules.length} std modules, as \`iyi doc\` prints them.
 - [Install](${origin}/install/): the one-line installer, the by-hand version, and from source.
 - [Playground](${origin}/playground/): the tour, ${tourSections.reduce((n, x) => n + x.steps.length, 0)} short programs that run in the browser.
 - [Playground evidence](${origin}/playground/evidence/): what ran, what checked it.

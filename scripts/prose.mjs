@@ -42,8 +42,17 @@ const INLINE = "a|code|strong|em|b|i|span|abbr|kbd|dfn";
 // Blocks whose insides are a token stream rather than prose. Matched by class
 // because that is what the site's own CSS keys on, so a new block type that
 // wants the exemption has to say so in the same vocabulary.
+//
+// `doc-comment` is the one block here that is prose, and it is exempt for the
+// other half of this gate's reasoning: the defect is a template's line break
+// that Astro drops, and a doc comment on a reference page reaches the HTML as
+// one string out of the repository, with no template line between its words.
+// What it does contain is the vocabulary of a standard library, `RFC 6265bis`,
+// `0xc0`, `1xx`, which the figure check reads as a number welded to a word.
+// Each one wraps exactly one paragraph or list, never a listing, so the
+// first closing tag after it is its own.
 const LISTINGS =
-  /<(pre|figure|div)[^>]*class="[^"]*(?:source|console|diagnostic|editor-ink|editor|cases|case|stamped|recording)[^"]*"[\s\S]*?<\/\1>/g;
+  /<(pre|figure|div)[^>]*class="[^"]*(?:source|console|diagnostic|editor-ink|editor|cases|case|stamped|recording|doc-comment)[^"]*"[\s\S]*?<\/\1>/g;
 
 function htmlFiles(dir) {
   const found = [];
