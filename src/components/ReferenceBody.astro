@@ -1,0 +1,184 @@
+---
+/**
+ * One reference page's body: the header comment, a list of what the page
+ * declares, then each declaration under its own heading with its doc comment
+ * and its listing exactly as `iyi doc` printed it.
+ *
+ * Every listing is a `.source` figure, which is the site's listing face and
+ * exempts it from scripts/prose.mjs: a signature is a token stream, not prose.
+ */
+import type { Block, Item } from "../lib/reference";
+
+interface Props {
+  /** What the listings are, for their captions: `std/csv`, `String`. */
+  name: string;
+  /** The command a reader would run to see the same text. */
+  command: string;
+  intro: Block[];
+  items: Item[];
+}
+
+const { name, command, intro, items } = Astro.props;
+
+/* The introduction's first paragraph is the page's lead, set above it by the
+ * page, so it is not printed twice. */
+const firstParagraph = intro.findIndex((block) => block.kind === "paragraph");
+const rest = intro.filter((_, index) => index !== firstParagraph);
+---
+
+{
+  rest.length > 0 && (
+    <section class="ref-intro prose">
+      {rest.map((block) =>
+        block.kind === "paragraph" ? (
+          <div class="doc-comment"><p set:html={block.html} /></div>
+        ) : block.kind === "list" ? (
+          <div class="doc-comment"><ul>{block.items.map((item) => <li set:html={item} />)}</ul></div>
+        ) : (
+          <figure class="source">
+            <div class="scroll-x" role="region" tabindex="0" aria-label={`${name}, an example from its header comment`}>
+              <pre><code>{block.text}</code></pre>
+            </div>
+          </figure>
+        ),
+      )}
+    </section>
+  )
+}
+
+{
+  items.length > 1 && (
+    <nav class="ref-toc" aria-label={`Declared in ${name}`}>
+      <h2 class="h3">On this page</h2>
+      <ul>
+        {items.map((item) => (
+          <li>
+            <a href={`#${item.id}`}>
+              <code>{item.name}</code>
+            </a>
+            <span>{item.kind}</span>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
+
+<div class="ref-items">
+  {
+    items.map((item) => (
+      <section class="ref-item" id={item.id}>
+        <h2 class="ref-heading">
+          <code>{item.name}</code>
+          <span class="ref-kind">{item.kind}</span>
+        </h2>
+        {item.doc.map((block) =>
+          block.kind === "paragraph" ? (
+            <div class="doc-comment"><p set:html={block.html} /></div>
+          ) : block.kind === "list" ? (
+            <div class="doc-comment"><ul>{block.items.map((entry) => <li set:html={entry} />)}</ul></div>
+          ) : (
+            <figure class="source">
+              <div class="scroll-x" role="region" tabindex="0" aria-label={`${item.name}, an example from its doc comment`}>
+                <pre><code>{block.text}</code></pre>
+              </div>
+            </figure>
+          ),
+        )}
+        <figure class="source">
+          <figcaption class="source-head">
+            <span class="path">{name}</span>
+            <span>{command}</span>
+          </figcaption>
+          <div class="scroll-x" role="region" tabindex="0" aria-label={`${item.name}, as ${command} prints it`}>
+            <pre><code>{item.code}</code></pre>
+          </div>
+        </figure>
+      </section>
+    ))
+  }
+</div>
+
+<style>
+  .ref-intro,
+  .ref-item {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+  }
+
+  .ref-intro :global(p),
+  .ref-item :global(p) {
+    margin: 0;
+    max-width: 72ch;
+    line-height: 1.7;
+  }
+
+  .ref-intro :global(figure),
+  .ref-item :global(figure) {
+    margin: 0;
+  }
+
+  .ref-toc {
+    border-top: var(--hair) solid var(--hairline);
+    padding-top: 20px;
+  }
+
+  .ref-toc ul {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    columns: 16rem;
+    column-gap: 32px;
+  }
+
+  .ref-toc li {
+    break-inside: avoid;
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    padding: 3px 0;
+  }
+
+  .ref-toc a {
+    text-decoration: none;
+  }
+
+  .ref-toc span,
+  .ref-kind {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--mute);
+  }
+
+  .ref-items {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+
+  .ref-item {
+    scroll-margin-top: 80px;
+    border-top: var(--hair) solid var(--hairline);
+    padding-top: 24px;
+  }
+
+  .ref-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 12px;
+    margin: 0;
+    font-size: 22px;
+    font-weight: 650;
+    overflow-wrap: anywhere;
+  }
+
+  .ref-heading code {
+    font-size: inherit;
+    background: none;
+    border: 0;
+    padding: 0;
+  }
+</style>

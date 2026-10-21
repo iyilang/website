@@ -44,6 +44,7 @@
 import { recordedText } from "../lib/highlight";
 import manifest from "../../records/wasm/manifest.json";
 import toc from "../../samples/tour/tour.json";
+import topics from "./topics.json";
 
 /**
  * The machine stamp every record carries. Identical in shape across all three
@@ -288,4 +289,63 @@ export function sampleNote(pathOrId: string): string | null {
  */
 export function blurbOf(path: string): string {
   return recordedText(path).split("\n")[0].replace(/^#\s*/, "").replace(/\.$/, "");
+}
+
+type Topic = { topic: string; about?: string };
+const topicOf: Record<string, Topic> = topics.samples;
+
+/**
+ * What a search engine is told a program's page is: a title that leads with
+ * the topic a reader searched for, and a description that says what the
+ * program does and that it runs here.
+ *
+ * The topic is ours, out of `topics.json`, because a sample's id (`nil`,
+ * `iyi/std_time`) is a file name and not something anyone types into a search
+ * box. The first sentence of the description is the program's own first
+ * comment line where that line is a sentence, which for the tour it always
+ * is, and the entry's `about` for a repository sample, whose first line is
+ * written for a reader of the repository. Both directions are checked: a page
+ * with no entry, or a repository sample with no `about`, fails the build.
+ */
+export function searchOf(step: TourStep): { title: string; description: string } {
+  const entry = topicOf[step.id];
+  if (entry === undefined) {
+    throw new Error(
+      `playground: src/playground/topics.json has no entry for "${step.id}", ` +
+        `so its page has no title a reader would search for. Add one.`,
+    );
+  }
+  if (step.set === "iyi" && entry.about === undefined) {
+    throw new Error(
+      `playground: src/playground/topics.json gives "${step.id}" no \`about\`. ` +
+        `A repository sample's first comment line is written for the repository, ` +
+        `not for a results page, so its description is written here.`,
+    );
+  }
+  const sentence = (entry.about ?? blurbOf(step.path)).replace(/`/g, "").replace(/\.$/, "");
+  return runnable(step)
+    ? {
+        title: `${entry.topic} in iyi: a runnable example`,
+        description: `${sentence}. Run it in your browser, compiled to WebAssembly by iyi.`,
+      }
+    : {
+        title: `${entry.topic} in iyi: an example and its output`,
+        description: `${sentence}. An iyi example, with what it printed when compiled natively.`,
+      };
+}
+
+/* The other direction: an entry for a program that has no page is a topic
+ * nobody reads, and usually the trace of a rename the map did not follow. */
+{
+  const paged = new Set([
+    ...tourSamples.map((step) => step.id),
+    ...curatedSamples.filter((sample) => sample.set === "iyi").map((sample) => sample.id),
+  ]);
+  const stale = Object.keys(topicOf).filter((id) => !paged.has(id));
+  if (stale.length > 0) {
+    throw new Error(
+      `playground: src/playground/topics.json names ${stale.join(", ")}, which ` +
+        `no playground page carries. Remove the entries or the rename that orphaned them.`,
+    );
+  }
 }

@@ -32,7 +32,12 @@ interface Block {
 interface Document {
   id: string;
   file: string;
+  /** The document's own first heading: the page's h1. */
   title: string;
+  /** The page's title, from scripts/project.mjs, which says why it differs. */
+  name: string;
+  /** Whether a search engine is asked to index the page. */
+  indexed: boolean;
   blurb: string;
   lines: number;
   cite: string;
@@ -60,8 +65,9 @@ const others = project.documents.filter((entry) => entry.id !== doc.id);
 
 <Page
   kind="TechArticle"
-  title={doc.title}
-  summary={`${doc.blurb} Published verbatim from ${doc.file} in the iyi repository, ${doc.lines} lines, reassembled byte for byte at build time.`}
+  title={doc.name}
+  indexable={doc.indexed}
+  summary={`${doc.blurb} ${doc.file} from the iyi repository, published verbatim.`}
 >
   <div class="wrap">
     <div class="doc">

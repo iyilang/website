@@ -1,7 +1,9 @@
 ---
 title: One keyword, and your own namespace
+searchTitle: "Imports in iyi: one keyword, and your own namespace"
 order: 3
 summary: "`import` loads a module and gives you its qualified name. The list or the glob written after the path, `::{...}` or `::*`, is what shortens that, and you write it, so no library can change what a name in your file means by adding an export of its own."
+description: "In iyi, import loads a module under its qualified name. The list or glob you write after it shortens names, so no library can change what yours mean."
 rule: R-2b
 sample: samples/iyi/modules.iyi
 breaks: r2b-name-not-imported

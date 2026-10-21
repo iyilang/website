@@ -1,0 +1,55 @@
+---
+/**
+ * One prelude type: what every iyi program has without an import, as
+ * `iyi doc <Type>` printed it at the release.
+ */
+import { Image } from "astro:assets";
+import Page from "../../../layouts/Page.astro";
+import ReferenceBody from "../../../components/ReferenceBody.astro";
+import mascot from "../../../assets/mascot.png";
+import { reference, referenceHref, typeSearch, type ReferencePage } from "../../../lib/reference";
+
+export function getStaticPaths() {
+  return reference.prelude.map((page) => ({ params: { type: page.slug }, props: { page } }));
+}
+
+const { page } = Astro.props as { page: ReferencePage };
+const search = typeSearch(page);
+const lead = page.intro.find((block) => block.kind === "paragraph");
+---
+
+<Page kind="TechArticle" title={search.title} summary={search.description}>
+  <div class="wrap ref">
+    <section class="page-hero">
+      <p class="eyebrow">
+        <Image src={mascot} alt="" width={20} height={19} densities={[1, 2]} loading="eager" decoding="async" />
+        <a href={referenceHref()}>Prelude, {reference.release.version}</a>
+      </p>
+      <h1 class="h1"><code>{page.name}</code></h1>
+      {lead && lead.kind === "paragraph" && <div class="doc-comment"><p class="lead" set:html={lead.html} /></div>}
+      <p class="p">In the prelude: every iyi program has it, with no import.</p>
+    </section>
+    <ReferenceBody
+      name={page.name}
+      command={`iyi doc ${page.name}`}
+      intro={page.intro}
+      items={page.items}
+    />
+  </div>
+
+  <style>
+    .ref {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      max-width: 900px;
+    }
+
+    .ref h1 code {
+      font-size: inherit;
+      background: none;
+      border: 0;
+      padding: 0;
+    }
+  </style>
+</Page>
