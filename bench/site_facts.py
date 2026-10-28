@@ -23,8 +23,8 @@ stated flatly.
 
 RECORDED. Seconds, bytes, milliseconds. These are a machine, not a language,
 and README.md is scrupulous about saying so: it names the exact box and it
-publishes a tired session reading 0.22 / 1.81 / 0.27 where a good one read
-0.13 / 1.17 / 0.16. So a recorded number is never emitted on its own. It is
+publishes other sessions reading 0.16 / 1.29 / 0.19 and 0.22 / 1.81 / 0.27
+where the table's read 0.13 / 1.17 / 0.16. So a recorded number is never emitted on its own. It is
 emitted as a group carrying the machine that produced it, the command that
 prints it, and every session README.md publishes, so the site can draw the
 spread and lead with the ratio. The ratio is the claim. The second is a
@@ -306,14 +306,14 @@ RECORDED_PATTERNS: list[tuple[str, str, tuple[str, ...]]] = [
     ("machine", r"\(([^()]*Ryzen[^()]*)\)", ("name",)),
     (
         "edit_loop",
-        r"\| \*\*rebuild after one edit\*\* \| \*\*([\d.]+)\*\* \| ([\d.]+) \| ([\d.]+) \|",
+        r"\| \*\*one module's body\*\* \| \*\*([\d.]+)\*\* \| ([\d.]+) \| ([\d.]+) \|",
         ("iyi", "crystal", "go"),
     ),
     (
         "edit_loop_sessions",
-        r"read (\d+\.\d+ / \d+\.\d+ / \d+\.\d+) and (\d+\.\d+ / \d+\.\d+ / \d+\.\d+) "
-        r"on the first row, and a tired session reads (\d+\.\d+ / \d+\.\d+ / \d+\.\d+)",
-        ("a", "b", "tired"),
+        r"other sessions on the same box read (\d+\.\d+ / \d+\.\d+ / \d+\.\d+) and\s+"
+        r"(\d+\.\d+ / \d+\.\d+ / \d+\.\d+) on the first row",
+        ("a", "b"),
     ),
     ("edit_loop_ratio", r"costs \*\*([\d.]+)x less\*\*", ("times",)),
     (
@@ -369,16 +369,23 @@ RECORDED_PATTERNS: list[tuple[str, str, tuple[str, ...]]] = [
     ),
     (
         "context_tokens",
-        r"\*\*(\d+)–(\d+)% fewer prompt tokens\*\* over ([a-z]+(?:-[a-z]+)*) measured runs",
-        ("low", "high", "runs"),
+        r"\*\*(\d+)–(\d+)% fewer prompt tokens\*\*",
+        ("low", "high"),
     ),
     # The other half of the same measurement, and the half that does not go
     # iyi's way: the model's rounds to green. README.md publishes it in the
     # same sentence as the token saving, so the site parses it from there and
     # states it beside the saving rather than leaving a reader to assume.
+    # README.md no longer counts the runs; it names where they are written
+    # up, and the site says that rather than a count nobody maintains.
+    (
+        "context_runs",
+        r"over the runs written up in ([A-Z_]+\.md §\d+)",
+        ("where",),
+    ),
     (
         "context_rounds",
-        r"rounds-to-green are the model's, tied ([a-z]+) times and lost ([a-z]+),",
+        r"rounds to green tied ([a-z]+) times and lost\s+([a-z]+)\.",
         ("tied", "lost"),
     ),
 ]
@@ -400,6 +407,7 @@ COMMANDS: dict[str, str] = {
     "runtime_arithmetic": "python3 bench/runtime.py",
     "context_pack": "python3 bench/context_pack.py",
     "context_tokens": "python3 bench/context_pack.py",
+    "context_runs": "python3 bench/context_pack.py",
     "context_rounds": "python3 bench/context_pack.py",
 }
 
@@ -442,8 +450,10 @@ def sessions(raw: dict) -> list[dict[str, float]]:
     column is parsed, because a drift in the row is still a drift, and then
     dropped.
     """
-    rows = []
-    for slot in ("a", "b", "tired"):
+    # The table's own row is the first reading; the sentence under it gives
+    # the other two sessions.
+    rows = [{"iyi": float(raw["table"]["iyi"]), "crystal": float(raw["table"]["crystal"])}]
+    for slot in ("a", "b"):
         iyi, crystal, _ = (float(v) for v in raw[slot].split(" / "))
         rows.append({"iyi": iyi, "crystal": crystal})
     return rows
@@ -461,7 +471,7 @@ def build() -> tuple[dict, list[str]]:
         return {}, missing
 
     default_machine = machine(raw["machine"]["name"])
-    loop = sessions(raw["edit_loop_sessions"])
+    loop = sessions({**raw["edit_loop_sessions"], "table": raw["edit_loop"]})
     ratios = [round(s["crystal"] / s["iyi"], 2) for s in loop]
     tree = measured()
     # Counted here rather than by `measured()`, which measures that project's
@@ -562,7 +572,7 @@ def build() -> tuple[dict, list[str]]:
                 "size_high": int(raw["context_pack"]["size_high"]),
                 "tokens_low": int(raw["context_tokens"]["low"]),
                 "tokens_high": int(raw["context_tokens"]["high"]),
-                "runs": raw["context_tokens"]["runs"],
+                "runs_where": raw["context_runs"]["where"],
                 "rounds_tied": raw["context_rounds"]["tied"],
                 "rounds_lost": raw["context_rounds"]["lost"],
                 "unit": "%",

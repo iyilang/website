@@ -185,7 +185,7 @@ const diffs = [
 
 <Page
   title="iyi for agents"
-  summary={`Your agent reads the interface, not the repository. The loop an agent runs against iyi, recorded: ground, check, fix, and re-run what the change reaches. ${pack.tokens_low} to ${pack.tokens_high}% fewer prompt tokens over ${pack.runs} measured runs.`}
+  summary={`Your agent reads the interface, not the repository. The loop an agent runs against iyi, recorded: ground, check, fix, and re-run what the change reaches. ${pack.tokens_low} to ${pack.tokens_high}% fewer prompt tokens over the runs ${pack.runs_where} writes up.`}
 >
   <div class="wrap">
     <section class="page-hero agents-hero">
@@ -401,7 +401,7 @@ const diffs = [
         <dl>
           <div><dt>samples</dt><dd>{measuredOn.map((target) => target.file).join(" · ")}</dd></div>
           <div><dt>token task</dt><dd>{taskFile}</dd></div>
-          <div><dt>runs</dt><dd>{pack.runs}</dd></div>
+          <div><dt>runs</dt><dd>{pack.runs_where}</dd></div>
           <div><dt>arm A</dt><dd>sources</dd></div>
           <div><dt>arm B</dt><dd>iyi mod context</dd></div>
           <div><dt>pack size</dt><dd>{pack.size_low}–{pack.size_high}% of sources</dd></div>
