@@ -1,0 +1,146 @@
+---
+title: Work on every core, and what may cross
+order: 9
+summary: "`spawn` stays on its spawner's thread and may touch anything; `spawn_parallel` runs on any core and may capture only what is `Share`. `Server.serve` puts every connection on that pool, so its block is checked the same way, and `workers: 1` keeps a server on one thread."
+rule: III.4
+sample: samples/iyi/cores.iyi
+breaks: share-serve-capture
+breaksMore:
+  - share-reach
+bought: >-
+  A data race on a value a block captures does not compile, and a block that
+  reaches shared state through a call is named at the block, with the path,
+  rather than found by a race detector on the run that happened to hit it. A
+  server that was correct on one thread is told exactly what to change before
+  it runs on every core.
+sources:
+  - file: samples/iyi/cores.iyi
+    note: both kinds of task, the state a pool may share, a server on every core that stops through a channel, and a constant marked with why it is safe
+  - file: src/std/http.iyi
+    note: "`Server.serve` and its `workers:` argument, and the mark that has its block checked as a parallel task's"
+  - file: src/std/mutex.iyi
+    note: the lock a waiting task parks on rather than holding its thread
+  - file: SPEC.md
+    note: III.4.4 for what `Share` is and the reach check, III.4.13 for the pool, how many workers it has, and how a task moves between them
+  - file: CHANGELOG.md
+    note: the release that made `serve` run on every core and removed `serve_parallel`, with the migration
+---
+
+import Sample from "../../components/Sample.astro";
+
+Every step so far has been about what a module tells the modules that import
+it. This one is about what a block tells the thread that runs it, and the
+promise is the same shape: the compiler is told, so a mistake is refused where
+it is written instead of turning up at runtime, or never.
+
+## Two ways to start a task
+
+`g.spawn` starts a task on the thread that spawned it. Its tasks take turns
+at their parks, never two at the same instant, so a block may append to an
+`Array` it captured and nothing is raced.
+
+<Sample path="samples/iyi/cores.iyi" from="seen = [] of Int64" to="puts seen.sorted" />
+
+`g.spawn_parallel` starts a task a pool of worker threads runs, on whichever
+core is free, and a task that parks may resume on another one. It is a task
+of its group like any other: joined at the group's end, cancelled with it, its
+answer through `value`.
+
+<Sample path="samples/iyi/cores.iyi" from="longest = 0_i64" to="puts longest" />
+
+What changed is what the block may capture. A parallel block may capture only
+what is `Share`: an immutable value, an `Atomic`, a `Mutex`, a `List`, a
+`Channel` of `Share` values. Each task above captures nothing but its own
+`part`, and builds its answer itself. An answer need not be `Share`, because
+it is handed over once, after the task has ended, and the join orders it.
+
+The pool starts at the first `spawn_parallel`, with one worker per core the
+process may run on. `IYI_WORKERS=n` in the environment sets the count, and a
+program without a parallel task starts no pool at all.
+
+## State every core may touch
+
+A counter that every core adds to is an `Atomic`, and an `Array` that every
+core appends to sits behind a `Mutex`. Both are `Share`, so a parallel block
+may capture them, and what is behind the lock is reached only inside `lock`.
+
+<Sample path="samples/iyi/cores.iyi" from="hits = Atomic" to="paths = Mutex" />
+
+A task that waits for a held `Mutex` parks, as it would on a channel, so the
+worker it was on runs other tasks meanwhile.
+
+## A server on every core
+
+std/http's `Server.serve` runs each connection as a parallel task on the
+pool, so a server uses every core without asking. Its block is checked as a
+parallel task's is.
+
+<Sample path="samples/iyi/cores.iyi" from="Server.serve(listener) do |req|" block />
+
+Two things in that block are there because of the check. The path is copied
+into a `String` before the lock, because a block that runs behind a `Mutex`
+may not capture the request it came from. And the server stops through a
+channel: `/stop` may arrive on any worker, and closing the listener from the
+block would capture it, so the block sends on `stop` and a task beside the
+server, on the thread that opened the listener, closes it.
+
+`Server.serve(listener, workers: 1)` is the server on one thread, the
+accepting one. Its block is not checked at all, because nothing it captures
+leaves that thread: it may append to an `Array`, count in a plain variable,
+close its own listener. A count in a variable is checked as a pool would be,
+since nothing at compile time says it is one.
+
+### TLS on every core
+
+A server's `tls:` takes `config.frozen`, a `TlsFrozenServerConfig`: a copy
+of the configuration no property of which changes, which every worker may
+read. A `TlsServerConfig` itself, on more than one worker, is refused at the
+argument, naming the same two ways out. `serve` does not freeze it for you,
+because a property assigned while the server runs would reach no worker and
+nothing would say so. An identity source goes to `frozen` as a block, whose
+captures are checked like any other.
+
+## Module state a call reaches
+
+The check reads what a block names. A block that calls a method, which reads
+a constant, names only the method, and used to compile with nothing said.
+Now the compiler walks the calls from the block through the program's own
+modules and its packages, and warns at the block for every constant and class
+variable it reaches whose type is not `Share`, once each, by the shortest
+path.
+
+Some such state is safe: set once at startup and only read after, or guarded
+some other way. That is said on its declaration, with the reason as the
+claim.
+
+<Sample path="samples/iyi/cores.iyi" from="@[SafeReach(" to="GREETING = " />
+
+<Sample path="samples/iyi/cores.iyi" region="def greeting" />
+
+The mark quiets the warning for that state alone. A block that names
+`GREETING` itself is still refused, because a block's own text is checked
+exactly, and the mark is a claim about calls the compiler cannot follow to the
+end. It is a warning rather than a refusal so that nothing that compiled
+stops compiling; `iyi build --error-on-warnings`, or `iyi check` given the
+same, makes it fail a build.
+
+## Moving off `serve_parallel`
+
+0.19.1 had `Server.serve_parallel` beside a `serve` on one thread. It is gone,
+with no alias, and `serve` is the pool. A call to `serve_parallel` becomes a
+call to `serve` with the same arguments. A `serve` that was on one thread
+needs nothing if its block captures nothing unshareable: it now uses every
+core. One whose block captures a `Router`, an `Array`, a counter or the
+listener it closes, or whose `tls:` is a `TlsServerConfig`, either passes
+`workers: 1` and stays as it was, or moves to what crosses threads: the state
+behind a `Mutex` or in an `Atomic`, the router to a `SharedRouter`, the
+configuration to `config.frozen`, and the stop to a `Channel`, as the server
+above does.
+
+## Capture what does not cross
+
+Here is a server whose block appends every path it is asked for to an
+`Array`. On one thread that is fine. On every core two workers could append at
+once, and the compiler refuses the capture where it is written, naming both
+ways out. After it, the same server reaching a constant through a call, built
+to fail on warnings.

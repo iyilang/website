@@ -1,0 +1,17 @@
+# Breaks III.4.4 as III.4.13 applies it: `Server.serve` runs each connection
+# on the pool's workers, so its block is checked as `spawn_parallel`'s is,
+# and every value it captures must be `Share`. An `Array` is not: two
+# workers appending at once would race its size. Everything else here is
+# legal, and the refusal names both ways out - the array behind a `Mutex`,
+# or `workers: 1`, which keeps the server on one thread.
+module diagnostics/share_serve_capture
+
+import std/http::{Response, Server}
+import std/socket::{IyiSocket}
+
+seen = [] of String
+listener = IyiSocket.listen("127.0.0.1", 0)
+Server.serve(listener) do |req|
+  seen << req.path
+  Response.new(200, "ok")
+end

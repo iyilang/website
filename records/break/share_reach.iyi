@@ -1,0 +1,21 @@
+# Breaks III.4.4's reach check: the block names nothing unshareable, but
+# `greeting`, which it calls, reads `GREETING`, an `Array` any worker could
+# reach while another changes it. The compiler walks the calls from the
+# block and warns at the block, by the shortest path. A warning, so the
+# build is asked to fail on one: `--error-on-warnings`, as CI would.
+# `@[SafeReach("...")]` on the constant, saying why it is safe, quiets it.
+module diagnostics/share_reach
+
+import std/http::{Response, Server}
+import std/socket::{IyiSocket}
+
+GREETING = ["hello", "from", "every", "core"]
+
+def greeting : String
+  GREETING.join(" ")
+end
+
+listener = IyiSocket.listen("127.0.0.1", 0)
+Server.serve(listener) do |req|
+  Response.new(200, greeting)
+end
