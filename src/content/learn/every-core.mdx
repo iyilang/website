@@ -1,7 +1,9 @@
 ---
 title: Work on every core, and what may cross
+searchTitle: "Parallelism in iyi: every core, and what may cross"
 order: 9
 summary: "`spawn` stays on its spawner's thread and may touch anything; `spawn_parallel` runs on any core and may capture only what is `Share`. `Server.serve` puts every connection on that pool, so its block is checked the same way, and `workers: 1` keeps a server on one thread."
+description: "iyi's spawn_parallel runs on any core and may capture only what is Share. Server.serve puts each connection on that pool; workers: 1 keeps one thread."
 rule: III.4
 sample: samples/iyi/cores.iyi
 breaks: share-serve-capture
