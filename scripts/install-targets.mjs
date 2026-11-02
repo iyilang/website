@@ -174,9 +174,12 @@ if (undocumented.length > 0) {
 
 /* The platform words, out of the parenthesis that introduces README's
  * one-liner: "Install the latest release into `~/.local` (Linux x86-64, macOS
- * arm64):", directly above the fenced command. Anchored on that fence, so a
- * paragraph about a platform this record does not carry - the Windows
- * one-liner's, under it - cannot be read instead. */
+ * arm64; a program built for macOS runs on macOS 14.4 or later, ...):",
+ * directly above the fenced command. The platforms are the list before the
+ * first semicolon; what follows it is a note about one of them, as 0.20.0
+ * added. Anchored on that fence, so a paragraph about a platform this record
+ * does not carry - the Windows one-liner's, under it - cannot be read
+ * instead. */
 const prose = /\(([^()]*)\):\s*```sh\s+curl [^`]*?install\.sh \| sh/.exec(readme);
 if (!prose) {
   throw new Error(
@@ -185,7 +188,7 @@ if (!prose) {
       `repository to take the prose name of each target from.`,
   );
 }
-const phrases = prose[1].split(/\s*(?:,|and)\s*/).filter(Boolean);
+const phrases = prose[1].split(";")[0].split(/\s*(?:,|and)\s*/).filter(Boolean);
 
 /** The words of a phrase, and the parts of any word that is itself hyphenated,
  * so `x86-64` is matched whole as well as by its halves. */
