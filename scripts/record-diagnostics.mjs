@@ -126,6 +126,23 @@ const CASES = [
     file: "errors_non_exhaustive.iyi",
     expect: "case is not exhaustive",
   },
+  {
+    id: "share-serve-capture",
+    rule: "III.4",
+    title: "a server's block that captures an Array",
+    file: "share_serve_capture.iyi",
+    expect: "which is not Share",
+  },
+  {
+    // A warning, not a refusal, so the build is told to fail on warnings:
+    // the case records what a build run that way prints.
+    id: "share-reach",
+    rule: "III.4",
+    title: "a server's block that reaches module state through a call",
+    file: "share_reach.iyi",
+    flags: ["--error-on-warnings"],
+    expect: "(not Share) through `greeting`",
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -232,7 +249,7 @@ const cases = [];
 
 for (const entry of CASES) {
   const relative = `records/break/${entry.file}`;
-  const args = ["build", "--no-codegen", "--no-color", relative];
+  const args = ["build", "--no-codegen", "--no-color", ...(entry.flags ?? []), relative];
 
   // The compiler is written by name rather than by path: the path is per
   // machine and `recorded.compiler` already pins the exact build. Everything

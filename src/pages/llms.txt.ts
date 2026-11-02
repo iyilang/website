@@ -94,8 +94,8 @@ for Type\` lives with the trait or the type (R-3).
   on ${loop.machine}.
 - Agent experience (AX): a module's interface is a file (.iyimod). \`iyi mod context\`
   grounds an edit at ${pack.size_low} to ${pack.size_high}% of the sources' size; a model writing
-  against it spent ${pack.tokens_low} to ${pack.tokens_high}% fewer prompt tokens over ${pack.runs} measured
-  runs (\`${pack.command}\`). The loop is one verb per step, and every step of
+  against it spent ${pack.tokens_low} to ${pack.tokens_high}% fewer prompt tokens over the runs
+  ${pack.runs_where} writes up (\`${pack.command}\`). The loop is one verb per step, and every step of
   it is recorded from a real run at ${origin}/agents/:
 ${loopFrames}
   Both servers are in the binary, with nothing to install: \`iyi mcp\` serves

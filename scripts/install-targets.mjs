@@ -151,7 +151,7 @@ if (disagree.length > 0) {
 
 /* README's "Getting it" section, which is where a reader of the repository is
  * told which tarball the installer picks. */
-const documented = /picks the tarball for `uname` \(([^)]*)\)/.exec(readme);
+const documented = /picks the\s+tarball for your machine,\s+([^,]*?),\s+and refuses/.exec(readme);
 if (!documented) {
   throw new Error(
     `install-targets: ${CLAIM} no longer says which tarball install.sh picks ` +
@@ -172,20 +172,23 @@ if (undocumented.length > 0) {
   );
 }
 
-/* The platform words, out of the sentence under README's one-liner. Anchored
- * on the one-liner's own fenced block: the sentence a reader is shown is the
- * one directly under the command, and the first sentence after the fence is
- * it. Anchoring on what comes after instead put this at the mercy of a
- * paragraph about a platform this record does not carry. */
-const prose = /install\.sh \| sh[^`]*``` ([A-Z][^.;]*)[.;]/.exec(readme);
+/* The platform words, out of the parenthesis that introduces README's
+ * one-liner: "Install the latest release into `~/.local` (Linux x86-64, macOS
+ * arm64; a program built for macOS runs on macOS 14.4 or later, ...):",
+ * directly above the fenced command. The platforms are the list before the
+ * first semicolon; what follows it is a note about one of them, as 0.20.0
+ * added. Anchored on that fence, so a paragraph about a platform this record
+ * does not carry - the Windows one-liner's, under it - cannot be read
+ * instead. */
+const prose = /\(([^()]*)\):\s*```sh\s+curl [^`]*?install\.sh \| sh/.exec(readme);
 if (!prose) {
   throw new Error(
-    `install-targets: ${CLAIM} no longer states the platforms in a sentence ` +
-      `under the fenced ${SOURCE} one-liner, so there is no sentence in the ` +
+    `install-targets: ${CLAIM} no longer states the platforms in the ` +
+      `parenthesis above the fenced ${SOURCE} one-liner, so there is no phrase in the ` +
       `repository to take the prose name of each target from.`,
   );
 }
-const phrases = prose[1].split(/\s*(?:,|and)\s*/).filter(Boolean);
+const phrases = prose[1].split(";")[0].split(/\s*(?:,|and)\s*/).filter(Boolean);
 
 /** The words of a phrase, and the parts of any word that is itself hyphenated,
  * so `x86-64` is matched whole as well as by its halves. */

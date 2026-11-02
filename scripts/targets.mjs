@@ -117,14 +117,14 @@ const claimed = (() => {
  */
 const audit = (() => {
   const text = read(CLAIM);
-  const counted = text.match(/audits the emitted object\s*\n?\s*for (\S+) triples/);
+  const counted = text.match(/audits the emitted object\s+for\s+(\S+)\s+of\s+the\s+nine/);
   if (!counted) {
     throw new Error(
       `targets: ${CLAIM} no longer says how many triples CI audits the ` +
         `emitted object for, so the site cannot say which of them it does.`,
     );
   }
-  const exempt = [...text.matchAll(/`([a-z0-9_]+-[a-z0-9_-]+)`(?=[^.]*type-check but are not object-audited)/g)].map(
+  const exempt = [...text.matchAll(/`([a-z0-9_]+-[a-z0-9_-]+)`(?=[^.]*only\s+type-check)/g)].map(
     (match) => match[1],
   );
   if (exempt.length === 0) {

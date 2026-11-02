@@ -367,7 +367,7 @@ if (Object.keys(rules).length === 0) {
 // that section's opening paragraph, read here, so the sentence on the page is
 // the specification's sentence and a section that is rewritten changes the page
 // or fails the build.
-const SECTIONS = ["III.1"];
+const SECTIONS = ["III.1", "III.4"];
 
 for (const id of SECTIONS) {
   const escaped = id.replace(/\./g, "\\.");

@@ -77,6 +77,12 @@ const NATIVE_ONLY = {
   "iyi/workers": TASKS_ON_WASM,
   tasks: TASKS_ON_WASM,
   channels: TASKS_ON_WASM,
+  "iyi/cores":
+    "A server on every core has no wasm32-wasi build to run. The program " +
+    "imports std/http, whose TLS reads the operating system's trusted roots " +
+    "through std/system_roots, and that module refuses to compile for a " +
+    "target with none; and its tasks, like every task, do not compile on " +
+    "wasm32 yet (SPEC.md III.4.8).",
 };
 
 const NOTES = {
