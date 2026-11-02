@@ -41,7 +41,7 @@ export const GET = () => {
       {
         name: "iyi",
         short_name: "iyi",
-        description: "A friendly, fast language for people and their agents.",
+        description: "A friendly, fast programming language for people and their agents.",
         start_url: "/",
         display: "browser",
         background_color: paper,

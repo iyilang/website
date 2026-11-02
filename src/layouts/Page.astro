@@ -66,13 +66,15 @@ interface Props {
   /**
    * Whether this page is a URL a crawler should keep.
    *
-   * True for every route the build emits. False for exactly one page, the 404:
-   * Astro writes it to `dist/404.html` and GitHub Pages serves it in place of
-   * any path that does not exist, so `/404/` is not a route this site has. A
-   * self-canonical there points a crawler at a URL that is itself a missing
-   * path, and asks it to index the result. When false this layout emits no
-   * canonical, no `og:url` and a `robots` meta, because the page is real and
-   * worth reading and simply is not an address.
+   * True for every route unless it says otherwise. False for the 404: Astro
+   * writes it to `dist/404.html` and GitHub Pages serves it in place of any
+   * path that does not exist, so `/404/` is not a route this site has, and a
+   * self-canonical there points a crawler at a missing path. False too for a
+   * published document that is not this project's to rank for, which
+   * scripts/project.mjs marks. When false this layout emits no canonical, no
+   * `og:url` and a `robots` noindex, because a canonical beside a noindex is
+   * two contradicting instructions; astro.config.mjs keeps such a page out of
+   * the sitemap.
    */
   indexable?: boolean;
 }
@@ -83,10 +85,46 @@ const href = (p: string) => `${base.replace(/\/$/, "")}/${p.replace(/^\//, "")}`
 const here = Astro.url.pathname;
 
 /* One title pattern for the whole site: the page, then the site, unless the
- * page is the site. */
+ * title already names it. "Install iyi | iyi" spent six of the characters a
+ * results page shows on saying the name twice, and a title that leads with
+ * what a reader searched for ("Arrays in iyi") has already said whose page it
+ * is. */
 const siteName = "iyi";
-const isHome = here === base || here === href("/");
-const fullTitle = isHome || title.endsWith(`| ${siteName}`) ? title : `${title} | ${siteName}`;
+const fullTitle = /\biyi\b/.test(title) ? title : `${title} | ${siteName}`;
+
+/* And it has to fit. A results page shows about sixty characters of a title
+ * and an ellipsis after them, so the words past that are words nobody sees. */
+const TITLE_MAX = 60;
+if (fullTitle.length > TITLE_MAX) {
+  throw new Error(
+    `Page: the title "${fullTitle}" is ${fullTitle.length} characters, over the ` +
+      `${TITLE_MAX} a results page shows before it cuts it.`,
+  );
+}
+
+/* The names people search for the language by. "iyi" alone is a common
+ * Turkish word and the name of a political party, so a search for it is never
+ * about this site; the GitHub organisation is `iyilang`, and that is the one
+ * second name the copy uses. Search engines read the rest out of the
+ * structured data below. */
+const alias = "iyilang";
+const alternateNames = [alias, "iyi lang", "iyi programming language"];
+
+/* A description is what a results page prints under the title, and it is cut
+ * at about 155 characters, mid-word, wherever the sentence happens to be. So a
+ * longer one is not a fuller description, it is a truncated one, and a page
+ * that is meant to be found has to say what it is in the space it is given.
+ * Checked here because every page's description passes through here. */
+const DESCRIPTION_MAX = 155;
+if (indexable && !summary) {
+  throw new Error(`Page: "${title}" is indexable and has no summary, so it has no description.`);
+}
+if (summary && summary.length > DESCRIPTION_MAX) {
+  throw new Error(
+    `Page: the summary of "${title}" is ${summary.length} characters, over the ` +
+      `${DESCRIPTION_MAX} a results page shows before it cuts the sentence:\n  ${summary}`,
+  );
+}
 const canonical = new URL(here, Astro.site).href;
 const ogImage = new URL(href("og.png"), Astro.site).href;
 
@@ -101,6 +139,7 @@ const ld = {
       "@id": `${Astro.site}#website`,
       url: Astro.site,
       name: siteName,
+      alternateName: alternateNames,
       description:
         "iyi is a friendly, fast programming language for people and their agents, compatible with Crystal.",
       inLanguage: "en",
@@ -109,6 +148,7 @@ const ld = {
       "@type": "SoftwareSourceCode",
       "@id": `${Astro.site}#iyi`,
       name: "iyi",
+      alternateName: alternateNames,
       description:
         "A compiled programming language whose modules compile against their dependencies' declarations, never their bodies. Compatible with Crystal: the same compiler builds .cr files, and iyi build --crystal gives a program Crystal's standard library and shards.",
       programmingLanguage: "iyi",
@@ -138,6 +178,7 @@ const ld = {
 const nav = [
   ["Why iyi", "why/"],
   ["Learn", "learn/"],
+  ["Reference", "reference/"],
   ["Agents", "agents/"],
   ["Playground", "playground/"],
   ["Install", "install/"],
@@ -353,11 +394,11 @@ const current = (path: string) => here.startsWith(href(path));
                 scrolled to the bottom. The licence is one link away, at
                 `/project/notice/`, rather than a second copy here. */}
             <p>
-              <strong>iyi is Turkish for good.</strong> A fast, compiled
-              language for developers and the agents working beside them, built
-              on a single refusal: a module compiles against what its
-              dependencies declare, never against what they do. Quick builds
-              and small binaries follow from it.
+              <strong>iyi is Turkish for good.</strong> iyi, or {alias}, is a
+              fast, compiled programming language for developers and the agents
+              working beside them, built on a single refusal: a module compiles
+              against what its dependencies declare, never against what they
+              do. Quick builds and small binaries follow from it.
             </p>
             <a class="button button--ink" href={href("install/")}>Install iyi →</a>
           </div>

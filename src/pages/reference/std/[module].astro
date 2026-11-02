@@ -1,0 +1,60 @@
+---
+/**
+ * One standard library module: its header comment out of the source at the
+ * release, and its exported surface as `iyi doc` printed it there.
+ */
+import { Image } from "astro:assets";
+import Page from "../../../layouts/Page.astro";
+import ReferenceBody from "../../../components/ReferenceBody.astro";
+import mascot from "../../../assets/mascot.png";
+import { moduleSearch, reference, referenceHref, type ModulePage } from "../../../lib/reference";
+
+export function getStaticPaths() {
+  return reference.modules.map((page) => ({ params: { module: page.slug }, props: { page } }));
+}
+
+const { page } = Astro.props as { page: ModulePage };
+const search = moduleSearch(page);
+const lead = page.intro.find((block) => block.kind === "paragraph");
+const source = `https://github.com/iyilang/iyi/blob/${reference.release.tag}/${page.path}`;
+---
+
+<Page kind="TechArticle" title={search.title} summary={search.description}>
+  <div class="wrap ref">
+    <section class="page-hero">
+      <p class="eyebrow">
+        <Image src={mascot} alt="" width={20} height={19} densities={[1, 2]} loading="eager" decoding="async" />
+        <a href={referenceHref()}>Standard library, {reference.release.version}</a>
+      </p>
+      <h1 class="h1"><code>{page.name}</code></h1>
+      {lead && lead.kind === "paragraph" && <div class="doc-comment"><p class="lead" set:html={lead.html} /></div>}
+      <p class="p">
+        <code>import {page.name}</code> to use it. Source:{" "}
+        <a href={source}>{page.path} at {reference.release.tag}</a>.
+      </p>
+    </section>
+    <ReferenceBody
+      name={page.name}
+      command={`iyi doc ${page.path}`}
+      intro={page.intro}
+      items={page.items}
+    />
+  </div>
+
+  <style>
+    .ref {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      max-width: 900px;
+    }
+
+    .ref h1 code {
+      font-size: inherit;
+      background: none;
+      border: 0;
+      padding: 0;
+      overflow-wrap: anywhere;
+    }
+  </style>
+</Page>

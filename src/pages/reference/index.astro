@@ -1,0 +1,108 @@
+---
+/**
+ * The reference's index: the prelude's types, then the standard library's
+ * modules, each with the first sentence its own comment opens with.
+ */
+import { Image } from "astro:assets";
+import Page from "../../layouts/Page.astro";
+import mascot from "../../assets/mascot.png";
+import { moduleHref, reference, typeHref } from "../../lib/reference";
+
+const { modules, prelude, release } = reference;
+---
+
+<Page
+  kind="CollectionPage"
+  title="iyi standard library reference"
+  summary={`Reference for the iyi standard library at ${release.version}: ${prelude.length} prelude types and ${modules.length} std modules, as the compiler's own iyi doc prints them.`}
+>
+  <div class="wrap">
+    <section class="page-hero">
+      <p class="eyebrow">
+        <Image src={mascot} alt="" width={20} height={19} densities={[1, 2]} loading="eager" decoding="async" />
+        Reference, {release.version}
+      </p>
+      <h1 class="h1">The standard library</h1>
+      <p class="lead">
+        Every type the prelude gives a program and every module under{" "}
+        <code>std/</code>, with each signature and doc comment exactly as{" "}
+        <code>iyi doc</code> prints it for {release.tag}.
+      </p>
+      <p class="p">
+        Recorded with {reference.recorded.compiler.split(" (")[0]} at{" "}
+        {reference.recorded.commit.slice(0, 9)}, and checked on every build
+        against the source that release ships.
+      </p>
+    </section>
+
+    <section class="sec">
+      <div class="sec__head">
+        <h2 class="h2">Prelude</h2>
+        <p class="p">In every program, with no import.</p>
+      </div>
+      <ul class="ref-list">
+        {
+          prelude.map((page) => (
+            <li>
+              <a href={typeHref(page)}>
+                <code>{page.name}</code>
+              </a>
+              {page.summary && <span>{page.summary}</span>}
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section class="sec">
+      <div class="sec__head">
+        <h2 class="h2">Modules</h2>
+        <p class="p">
+          Opt in with <code>import std/...</code>.
+        </p>
+      </div>
+      <ul class="ref-list">
+        {
+          modules.map((page) => (
+            <li>
+              <a href={moduleHref(page)}>
+                <code>{page.name}</code>
+              </a>
+              {page.summary && <span>{page.summary}</span>}
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+  </div>
+
+  <style>
+    .ref-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+      gap: 0 32px;
+    }
+
+    .ref-list li {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 12px 0;
+      border-top: var(--hair) solid var(--hairline);
+    }
+
+    .ref-list a {
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .ref-list span {
+      font-size: 14.5px;
+      line-height: 1.5;
+      color: var(--graphite);
+    }
+  </style>
+</Page>

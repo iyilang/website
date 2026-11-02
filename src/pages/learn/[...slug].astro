@@ -98,8 +98,8 @@ const steps = (await sequence()).map((step) => ({
 
 <Page
   kind="TechArticle"
-  title={`${lesson.data.title}, learn iyi`}
-  summary={lesson.data.summary.replace(/`/g, "")}
+  title={lesson.data.searchTitle}
+  summary={lesson.data.description}
 >
   <div class="wrap">
     <article class="lesson">

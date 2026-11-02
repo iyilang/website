@@ -1,7 +1,9 @@
 ---
 title: A generic that crosses a boundary
+searchTitle: "Generics in iyi: a generic that crosses a module boundary"
 order: 6
 summary: Inside a module a generic monomorphizes. Crossing a module boundary it is supposed to pass a dictionary keyed on GC shape, and that half of the rule has nothing behind it yet, so the artifact carries the body and the consumer compiles it again.
+description: "Inside a module an iyi generic monomorphizes. Across a module boundary the artifact carries the body today, and the consumer compiles it again."
 rule: R-4
 sample: samples/iyi/immutable.iyi
 breaks: r4-monomorphize-unknown

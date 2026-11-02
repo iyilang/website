@@ -36,7 +36,10 @@
     { "match": "/learn/*/", "ceiling": 245760 },
     { "match": "/playground/", "ceiling": 229376 },
     { "match": "/playground/iyi/*/", "ceiling": 262144 },
-    { "match": "/playground/*/", "ceiling": 294912 }
+    { "match": "/playground/*/", "ceiling": 294912 },
+    { "match": "/reference/", "ceiling": 245760 },
+    { "match": "/reference/std/*/", "ceiling": 344064 },
+    { "match": "/reference/prelude/*/", "ceiling": 229376 }
   ],
   "assets": 638976
 }

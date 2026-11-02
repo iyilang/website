@@ -33,8 +33,25 @@ const learn = defineCollection({
   loader: glob({ base: "./src/content/learn", pattern: "**/*.{md,mdx}" }),
   schema: z.object({
     title: z.string().min(1),
+    // The title a results page and a browser tab show, and the words a reader
+    // would type to find the step: the topic, then the language, then the
+    // lesson's own title if it fits. `title` is a lesson's heading and it is
+    // written to be read after the reader arrived ("Errors you cannot ignore"),
+    // which no one searches for. Sixty characters is about what a results page
+    // shows before it cuts, and the language's name has to be in it.
+    searchTitle: z
+      .string()
+      .max(60)
+      .regex(/\biyi\b/, "searchTitle names the language, as in `Error handling in iyi: ...`"),
     order: z.number().int().positive(),
     summary: z.string().min(1),
+    // What a results page prints under the title: the summary, said in the
+    // space a results page gives it. Plain text, because no search engine
+    // renders the backticks the summary uses for code.
+    description: z
+      .string()
+      .max(155)
+      .regex(/^[^`]*$/, "description is plain text: no backticks"),
     rule: z
       .string()
       .regex(

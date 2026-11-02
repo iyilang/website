@@ -168,10 +168,17 @@ export function requireReleaseTree(repo, release, verb) {
  * from a developer's branch is caught here rather than in a recording that
  * names a release and was produced by something else. The provenance line on
  * every page carries this string.
+ *
+ * A build in a worktree prints nine hex digits; the release's own binary, the
+ * one install.sh unpacks, prints seven (`iyi 0.18.0 (built on Crystal ...
+ * [2a96530] ...)`). Both name the commit, so a bracketed hash the tag's commit
+ * starts with is accepted beside the nine-digit spelling.
  */
 export function requireReleaseCompiler(iyi, release, verb) {
   const version = execFileSync(iyi, ["--version"], { encoding: "utf8" }).split("\n")[0].trim();
   if (version.includes(release.commit.slice(0, 9))) return version;
+  const named = /\[([0-9a-f]{7,40})\]/.exec(version)?.[1];
+  if (named !== undefined && release.commit.startsWith(named)) return version;
   throw new Error(
     `${iyi} prints "${version}", which does not name ${release.commit.slice(0, 9)}, ` +
       `the commit ${release.tag} is. ${verb} would then stamp a release onto a ` +

@@ -1,7 +1,9 @@
 ---
 title: A macro that can only see one declaration
+searchTitle: "Derive macros in iyi: a macro that sees one declaration"
 order: 7
 summary: A macro is attached to a declaration with `derive`, it reads that declaration and what its field types implement, and it sees nothing global. So it runs once, in the module that declares the type, and what it generated travels in the artifact.
+description: "An iyi macro attaches to one declaration with derive and sees nothing global, so it runs once, where the type is declared, and its output travels with it."
 rule: R-5
 sample: samples/iyi/derive.iyi
 breaks: r5-global-question

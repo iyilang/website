@@ -7,8 +7,11 @@ the other way, the reason it did not is written down. Rendered proof is in
 ## The concept
 
 **A plain, friendly site with a mascot, and every number on it checkable.**
-The one line above the fold says what iyi is for: a friendly, fast language for
-people and their agents. Beside it stands the mascot, a red heart with an `i`
+The one line above the fold says what iyi is for: a friendly, fast programming
+language for people and their agents. "Programming language" is in it on
+purpose: it is the category a reader searches for, and a line that leaves it
+out leaves a search engine guessing what the site is about. Beside it stands
+the mascot, a red heart with an `i`
 on each cheek, waving. Under it a real program, read out of the repository at
 build time, and the bytes the compiler printed when it ran that program. The
 site's job is to be readable in one pass by someone who has never heard of iyi,
