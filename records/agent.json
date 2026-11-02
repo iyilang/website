@@ -1,10 +1,10 @@
 {
   "recorded": {
-    "compiler": "iyi 0.17.0 (built on Crystal 1.22.0-dev [fe3db8354] (2026-10-14))",
-    "commit": "fe3db8354f56ce84d411611d48e6dad235172275",
-    "machine": "Linux 7.0.0-31-generic x86_64, QEMU Virtual CPU version 2.5+",
+    "compiler": "iyi 0.20.0 (built on Crystal 1.22.0-dev [224ed74fc] (2026-11-02))",
+    "commit": "224ed74fc7ba9d78345dfd10f21ece4b499702fa",
+    "machine": "Linux 7.0.0-38-generic x86_64, QEMU Virtual CPU version 2.5+",
     "command": "npm run record:agent",
-    "when": "2026-10-14T11:26:22.139Z"
+    "when": "2026-11-02T07:19:31.432Z"
   },
   "project": [
     {
@@ -104,7 +104,7 @@
       "command": "iyi test --json .",
       "exitCode": 0,
       "payload": "stdout",
-      "stdout": "{\"tests\":[{\"file\":\"./app_test.iyi\",\"status\":\"pass\",\"seconds\":0.267}],\"passed\":1,\"failed\":0,\"skipped\":0}\n",
+      "stdout": "{\"tests\":[{\"file\":\"./app_test.iyi\",\"status\":\"pass\",\"seconds\":0.394}],\"passed\":1,\"failed\":0,\"skipped\":0}\n",
       "stderr": ""
     },
     {
@@ -167,7 +167,7 @@
       },
       "serverInfo": {
         "name": "iyi",
-        "version": "0.17.0"
+        "version": "0.20.0"
       }
     },
     "tools": [

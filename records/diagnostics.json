@@ -1,10 +1,10 @@
 {
   "recorded": {
-    "compiler": "iyi 0.17.0 (built on Crystal 1.22.0-dev [fe3db8354] (2026-10-14))",
-    "commit": "fe3db8354f56ce84d411611d48e6dad235172275",
-    "machine": "Linux 7.0.0-31-generic x86_64, QEMU Virtual CPU version 2.5+",
+    "compiler": "iyi 0.20.0 (built on Crystal 1.22.0-dev [224ed74fc] (2026-11-02))",
+    "commit": "224ed74fc7ba9d78345dfd10f21ece4b499702fa",
+    "machine": "Linux 7.0.0-38-generic x86_64, QEMU Virtual CPU version 2.5+",
     "command": "npm run record:diagnostics",
-    "when": "2026-10-14T11:26:14.391Z"
+    "when": "2026-11-02T07:19:23.048Z"
   },
   "cases": [
     {
@@ -105,6 +105,24 @@
       "command": "IYI_PATH=<iyi>/src iyi build --no-codegen --no-color records/break/errors_non_exhaustive.iyi",
       "exitCode": 1,
       "stderr": "Showing last frame. Use --error-trace for full trace.\n\nIn records/break/errors_non_exhaustive.iyi:28:1\n\n 28 | case read(\"missing\")\n      ^\nError: case is not exhaustive.\n\nMissing types:\n - Diagnostics::ErrorsNonExhaustive::IOError\n"
+    },
+    {
+      "id": "share-serve-capture",
+      "rule": "III.4",
+      "title": "a server's block that captures an Array",
+      "path": "records/break/share_serve_capture.iyi",
+      "command": "IYI_PATH=<iyi>/src iyi build --no-codegen --no-color records/break/share_serve_capture.iyi",
+      "exitCode": 1,
+      "stderr": "Showing last frame. Use --error-trace for full trace.\n\nIn records/break/share_serve_capture.iyi:15:3\n\n 15 | seen << req.path\n      ^---\nError: the block Server.serve keeps, which may run on other threads captures `seen : Array(String)`, which is not Share: Array(String)'s field @size is assigned in `append`. Put it behind a lock, a `Mutex(Array(String))` (std/mutex), or pass `workers: 1` so the block runs on one thread (SPEC.md III.4.4)\n"
+    },
+    {
+      "id": "share-reach",
+      "rule": "III.4",
+      "title": "a server's block that reaches module state through a call",
+      "path": "records/break/share_reach.iyi",
+      "command": "IYI_PATH=<iyi>/src iyi build --no-codegen --no-color --error-on-warnings records/break/share_reach.iyi",
+      "exitCode": 1,
+      "stderr": "In records/break/share_reach.iyi:19:24\n\n 19 | Server.serve(listener) do |req|\n                             ^\nWarning: the block Server.serve keeps, which may run on other threads reaches `GREETING : Array(String)` (not Share) through `greeting` → `GREETING.join`: Array(String)'s field @size is assigned in `append`. If it is only read, make it a `List(String)` (std/list), which is Share. Keep the value behind a `Mutex` (std/mutex), or, when every thread may reach it safely - it is set once and then only read, or guarded some other way - say why on the constant: `@[SafeReach(\"...\")]` (SPEC.md III.4.4)\n\nA total of 1 warnings were found.\n"
     }
   ]
 }
