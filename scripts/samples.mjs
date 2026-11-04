@@ -196,8 +196,13 @@ for (const [root, count] of [[breakRoot, "break"], [agentRoot, "agent"]]) {
 
 // README recordings --------------------------------------------------------
 
-const readmePath = resolve(repo, "README.md");
-const readmeLines = readFileSync(readmePath, "utf8").split("\n");
+// README.md, and INSTALL.md beside it: 0.20.1 moved installing by hand out of
+// README.md and into its own file, and the install page quotes those blocks
+// from where they now live.
+const README = "README.md";
+const INSTALL = "INSTALL.md";
+const fileLines = (file) => readFileSync(resolve(repo, file), "utf8").split("\n");
+const readmeLines = fileLines(README);
 
 function fencedBlocks(lines) {
   const blocks = [];
@@ -221,13 +226,12 @@ function fencedBlocks(lines) {
   return blocks;
 }
 
-// Each entry is a claim that one block in README.md says this. The anchor is
-// matched, never the line number, because a line number is a guess about a file
-// nobody edits with the site in mind.
+// Each entry is a claim that one block in README.md (or the `file` it names)
+// says this. The anchor is matched, never the line number, because a line
+// number is a guess about a file nobody edits with the site in mind.
 const WANTED = {
   first_run: { lang: "console", anchor: "$ iyi run main.iyi" },
   the_rule: { lang: "console", anchor: "rm -r app" },
-  library_deleted: { lang: "console", anchor: "rm -rf samples/iyi/kemal" },
   non_exhaustive: { lang: "console", anchor: "case is not exhaustive" },
   import_missing: { lang: "console", anchor: "is not imported here" },
   orphan_rule: { lang: "console", anchor: "an impl must live in the module" },
@@ -239,28 +243,33 @@ const WANTED = {
   // run, with no prompt and no output, so the site sets them as commands and
   // does not draw a prompt the README never printed. The same on the Windows
   // side, where the fence says `powershell` and the two lines are the one
-  // install.ps1 runs and the hello it leaves behind.
+  // install.ps1 runs and the hello it leaves behind. The by-hand lines are
+  // INSTALL.md's, set the same way.
   install: { lang: "sh", anchor: "install.sh | sh" },
-  install_manual: { lang: "sh", anchor: "tar -xzf iyi-" },
+  install_manual: { lang: "sh", anchor: "tar -xzf iyi-", file: INSTALL },
   install_windows: { lang: "powershell", anchor: "install.ps1 | iex" },
-  install_manual_windows: { lang: "powershell", anchor: "Expand-Archive iyi-" },
+  install_manual_windows: { lang: "powershell", anchor: "Expand-Archive iyi-", file: INSTALL },
 };
 
-const blocks = fencedBlocks(readmeLines);
+const blocksOf = new Map([
+  [README, fencedBlocks(readmeLines)],
+  [INSTALL, fencedBlocks(fileLines(INSTALL))],
+]);
 const readme = {};
 
 for (const [id, want] of Object.entries(WANTED)) {
-  const hits = blocks.filter((b) => b.text.includes(want.anchor));
+  const file = want.file ?? README;
+  const hits = blocksOf.get(file).filter((b) => b.text.includes(want.anchor));
   if (hits.length === 0) {
     die(
-      `README.md has no fenced block containing "${want.anchor}", which the ` +
+      `${file} has no fenced block containing "${want.anchor}", which the ` +
         `lesson "${id}" quotes. Either the passage moved and the anchor needs ` +
-        `updating, or the lesson is claiming something the README no longer says.`,
+        `updating, or the lesson is claiming something ${file} no longer says.`,
     );
   }
   if (hits.length > 1) {
     die(
-      `"${want.anchor}" matches ${hits.length} blocks in README.md ` +
+      `"${want.anchor}" matches ${hits.length} blocks in ${file} ` +
         `(lines ${hits.map((h) => h.from).join(", ")}), so "${id}" is ambiguous. ` +
         `Narrow the anchor.`,
     );
@@ -268,7 +277,7 @@ for (const [id, want] of Object.entries(WANTED)) {
   const [hit] = hits;
   if (hit.lang !== want.lang) {
     die(
-      `"${id}" expected a ${want.lang} block and README.md:${hit.from} is ` +
+      `"${id}" expected a ${want.lang} block and ${file}:${hit.from} is ` +
         `${hit.lang || "unlabelled"}. Output is quoted as output or not at all.`,
     );
   }
@@ -276,8 +285,8 @@ for (const [id, want] of Object.entries(WANTED)) {
     text: hit.text,
     from: hit.from,
     to: hit.to,
-    source: "README.md",
-    cite: `README.md, ${hit.to > hit.from ? `lines ${hit.from} to ${hit.to}` : `line ${hit.from}`}`,
+    source: file,
+    cite: `${file}, ${hit.to > hit.from ? `lines ${hit.from} to ${hit.to}` : `line ${hit.from}`}`,
   };
 }
 

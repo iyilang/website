@@ -24,28 +24,33 @@
 //   * the refusal the `*)` arm prints, which names the same targets in prose
 //     for a person whose machine is neither. The arms and the message drifting
 //     apart is the ordinary way this file goes wrong, and it is caught here;
-//   * README.md's "Getting it" section, which states the pair a reader is
-//     shown, so the site restates the repository rather than one file of it;
-//   * README.md's own platform words under the one-liner ("Linux x86-64 and
-//     macOS arm64"), which is where the prose name beside each target comes
-//     from. They are found by the fenced block that holds the `install.sh`
-//     one-liner rather than by the clause that used to follow them, because
-//     what follows is prose about other platforms and moves: 48bc8d0b5 put a
-//     PowerShell block between the sentence and the clause this once matched.
-//     What does not move is that the sentence sits directly under the command
-//     it qualifies. Each phrase is matched back to a target by scoring the
-//     target's own `uname` components against the phrase's words, so the only
-//     spellings this file knows are the two aliases below. An unmatched or
-//     ambiguous phrase fails and names itself; it is never guessed;
+//   * INSTALL.md's "Linux and macOS" section, which states the pair a reader
+//     is shown, so the site restates the repository rather than one file of
+//     it. It was README.md's "Getting it" until 0.20.1 moved installing to
+//     INSTALL.md;
+//   * README.md's own platform words above the one-liner ("Linux x86-64, or
+//     macOS 14.4 or later on arm64, into `~/.local`:"). They are found by the
+//     fenced block that holds the `install.sh` one-liner rather than by the
+//     clause that used to follow them, because what follows is prose about
+//     other platforms and moves: 48bc8d0b5 put a PowerShell block between the
+//     sentence and the clause this once matched. What does not move is that
+//     the sentence sits directly above the command it qualifies. Each phrase
+//     is matched back to a target by scoring the target's own `uname`
+//     components against the phrase's words, so the only spellings this file
+//     knows are the two aliases below. A target no phrase names, or a phrase
+//     naming a platform no target is, fails and names itself; it is never
+//     guessed. The prose name beside each target is README.md's own
+//     ("macOS arm64"), found by the target's own components rather than
+//     assembled from them, because the sentence now carries a floor inside
+//     the phrase;
 //   * install.ps1, which is the same three questions for the one platform
 //     install.sh refuses. 0.14.0 is the first release to publish a Windows
 //     build, and it is a zip rather than a tarball with an installer of its
 //     own, so it is recorded beside the tarballs instead of among them: one
 //     target, read out of the `$Asset` line that names it, cross-checked
 //     against the refusal that script prints for a 32-bit Windows and against
-//     the file name README.md spells out under "Getting it". Its prose name
-//     is README.md's own ("Windows x86-64"), found by the target's own
-//     components rather than assembled from them.
+//     the file name INSTALL.md spells out under "Windows". Its prose name is
+//     README.md's own ("Windows x86-64"), found the same way.
 //
 // WHAT IT DOES NOT DO. It does not check that a release actually published the
 // tarballs, or that a URL resolves. It checks that the site offers exactly what
@@ -66,6 +71,7 @@ const out = resolve(site, "src", "generated");
 const SOURCE = "install.sh";
 const WINDOWS = "install.ps1";
 const CLAIM = "README.md";
+const INSTALL = "INSTALL.md";
 
 /**
  * Spellings the repository uses for one platform. `uname -s` says `Darwin` and
@@ -93,9 +99,12 @@ const read = (relative) => {
 };
 
 const script = read(SOURCE);
-/* README.md wraps at about 80 columns, so its sentences are matched against
- * one long line, the way bench/site_facts.py reads it. */
-const readme = read(CLAIM).replace(/\s+/g, " ");
+/* README.md and INSTALL.md wrap at about 80 columns, so their sentences are
+ * matched against one long line, the way bench/site_facts.py reads them. */
+const flat = (text) => text.replace(/\s+/g, " ");
+const readmeText = read(CLAIM);
+const readme = flat(readmeText);
+const install = flat(read(INSTALL));
 
 /* The `case` block on `$os-$arch`, and nothing else in the script: a `case` on
  * something else must not be mistaken for this one. */
@@ -149,12 +158,12 @@ if (disagree.length > 0) {
   );
 }
 
-/* README's "Getting it" section, which is where a reader of the repository is
- * told which tarball the installer picks. */
-const documented = /picks the\s+tarball for your machine,\s+([^,]*?),\s+and refuses/.exec(readme);
+/* INSTALL.md's "Linux and macOS" section, which is where a reader of the
+ * repository is told which tarball the installer picks. */
+const documented = /picks the\s+tarball for your machine,\s+([^,]*?),\s+and refuses/.exec(install);
 if (!documented) {
   throw new Error(
-    `install-targets: ${CLAIM} no longer says which tarball install.sh picks ` +
+    `install-targets: ${INSTALL} no longer says which tarball install.sh picks ` +
       `for \`uname\`, so the target list has only install.sh stating it and ` +
       `this script has nothing to cross-check.`,
   );
@@ -166,29 +175,38 @@ const undocumented = [...accepted, ...listed].filter(
 if (undocumented.length > 0) {
   throw new Error(
     `install-targets: ${SOURCE} accepts [${[...accepted].join(", ")}] and ` +
-      `${CLAIM} says it picks [${[...listed].join(", ")}]. The repository ` +
+      `${INSTALL} says it picks [${[...listed].join(", ")}]. The repository ` +
       `states the set twice and the two have drifted, which is the drift this ` +
       `whole publication is arranged to refuse.`,
   );
 }
 
-/* The platform words, out of the parenthesis that introduces README's
- * one-liner: "Install the latest release into `~/.local` (Linux x86-64, macOS
- * arm64; a program built for macOS runs on macOS 14.4 or later, ...):",
- * directly above the fenced command. The platforms are the list before the
- * first semicolon; what follows it is a note about one of them, as 0.20.0
- * added. Anchored on that fence, so a paragraph about a platform this record
- * does not carry - the Windows one-liner's, under it - cannot be read
- * instead. */
-const prose = /\(([^()]*)\):\s*```sh\s+curl [^`]*?install\.sh \| sh/.exec(readme);
-if (!prose) {
+/* The platform words, out of the paragraph that introduces README's
+ * one-liner: "Linux x86-64, or macOS 14.4 or later on arm64, into
+ * `~/.local`:", directly above the fenced command. Anchored on that fence, so
+ * a paragraph about a platform this record does not carry - the Windows
+ * one-liner's, under it - cannot be read instead. */
+const lines = readmeText.replace(/\r\n/g, "\n").split("\n");
+const fence = lines.findIndex(
+  (line, i) => /^curl [^`]*install\.sh \| sh/.test(line) && /^```sh\s*$/.test(lines[i - 1] ?? ""),
+);
+let last = fence - 2;
+while (last >= 0 && lines[last].trim() === "") last--;
+let first = last;
+while (first > 0 && lines[first - 1].trim() !== "" && !lines[first - 1].startsWith("#")) first--;
+const sentence = fence < 0 || last < 0 ? "" : flat(lines.slice(first, last + 1).join(" ")).trim();
+if (!sentence.endsWith(":")) {
   throw new Error(
-    `install-targets: ${CLAIM} no longer states the platforms in the ` +
-      `parenthesis above the fenced ${SOURCE} one-liner, so there is no phrase in the ` +
-      `repository to take the prose name of each target from.`,
+    `install-targets: ${CLAIM} no longer introduces the fenced ${SOURCE} ` +
+      `one-liner with a sentence ending in a colon, so there is no statement ` +
+      `in the repository of which machines that command is for.`,
   );
 }
-const phrases = prose[1].split(";")[0].split(/\s*(?:,|and)\s*/).filter(Boolean);
+const phrases = sentence
+  .replace(/:$/, "")
+  .split(/,\s*(?:(?:or|and)\s+)?/)
+  .map((phrase) => phrase.trim())
+  .filter(Boolean);
 
 /** The words of a phrase, and the parts of any word that is itself hyphenated,
  * so `x86-64` is matched whole as well as by its halves. */
@@ -211,37 +229,62 @@ const score = (target, phrase) => {
   }).length;
 };
 
-/* One phrase per target, each phrase used once. A target with no single best
- * phrase left is a failure naming the target, never a guess: a prose name
- * attached to the wrong tarball is worse than none, because it would send a
- * reader to a download for a machine they do not have. */
-if (phrases.length !== published.length) {
+/* One phrase per target, naming both of its components, each phrase used
+ * once. A target with no such phrase is a failure naming the target, never a
+ * guess: the sentence above the command is what tells a reader which machine
+ * it is for. */
+const taken = new Set();
+for (const target of published) {
+  const naming = phrases.filter((phrase) => !taken.has(phrase) && score(target, phrase) === 2);
+  if (naming.length !== 1) {
+    throw new Error(
+      `install-targets: ${naming.length === 0 ? "no" : "more than one"} phrase ` +
+        `in ${CLAIM}'s "${sentence}" names ${target.target} (${target.os} ` +
+        `${target.arch}). Either the sentence was reworded or a spelling ` +
+        `belongs in ALIAS.`,
+    );
+  }
+  taken.add(naming[0]);
+}
+
+/* And no phrase there names a platform that is not one of the targets: a
+ * sentence offering the one-liner to a third machine would send that reader to
+ * a refusal. A phrase that names no component of any target is not a
+ * platform, such as where the install goes. */
+const stray = phrases.filter(
+  (phrase) => !taken.has(phrase) && published.some((target) => score(target, phrase) > 0),
+);
+if (stray.length > 0) {
   throw new Error(
-    `install-targets: ${CLAIM} names ${phrases.length} platform(s) ` +
-      `(${phrases.join(" / ")}) under its one-liner and ${SOURCE} ships ` +
-      `${published.length} tarball(s) (${[...accepted].join(", ")}). Every ` +
-      `published target needs the name a reader is shown.`,
+    `install-targets: ${CLAIM} offers the ${SOURCE} one-liner to ` +
+      `${stray.join(" / ")}, and ${SOURCE} ships ${[...accepted].join(", ")}. ` +
+      `Every platform the sentence names needs a published tarball.`,
   );
 }
 
-const taken = new Set();
-const targets = published.map((target) => {
-  const ranked = phrases
-    .filter((phrase) => !taken.has(phrase))
-    .map((phrase) => ({ phrase, points: score(target, phrase) }))
-    .sort((a, b) => b.points - a.points);
-  const [best, next] = ranked;
-  if (best.points === 0 || (next && next.points === best.points)) {
+/* The prose name of a target, in README.md's own words. The pattern is built
+ * from the target's own components and the aliases above, and what is
+ * recorded is the text README.md matched with, so the spelling a reader is
+ * shown is the repository's and never this file's. */
+const spell = (part) => ALIAS.get(part.toLowerCase()) ?? part;
+const spoken = (os, arch, target) => {
+  const match = new RegExp(
+    `\\b${spell(os)}[ -]${spell(arch).replace(/[-_]/g, "[-_]")}\\b`,
+    "i",
+  ).exec(readme);
+  if (!match) {
     throw new Error(
-      `install-targets: no single platform name in ${CLAIM} matches ` +
-        `${target.target} (${target.os} ${target.arch}). Candidates: ` +
-        `${ranked.map((r) => `${r.phrase} = ${r.points}`).join("; ")}. Either ` +
-        `the sentence was reworded or a spelling belongs in ALIAS.`,
+      `install-targets: ${CLAIM} never names ${target} in prose, so there is ` +
+        `no sentence in the repository to take the name beside its archive ` +
+        `from.`,
     );
   }
-  taken.add(best.phrase);
-  return { target: target.target, machine: best.phrase };
-});
+  return match[0];
+};
+const targets = published.map((target) => ({
+  target: target.target,
+  machine: spoken(target.os, target.arch, target.target),
+}));
 
 /* What the installer asks the release for, and where. Kept as the shell wrote
  * them, `$version` and `$target` included, so the generated record holds the
@@ -344,39 +387,23 @@ if (!refused.some((line) => line.includes(windowsTarget))) {
   );
 }
 
-/* And README.md's statement of it, under "Getting it", where the zip is
+/* And INSTALL.md's statement of it, under "Windows", where the zip is
  * spelled with a version rather than a placeholder. The asset template is
  * turned into the pattern that file would have to match, so a renamed asset
  * fails here instead of becoming a 404 on the download page. */
 const spelled = new RegExp(
   psAsset[1].replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace("\\$Version", "\\d+\\.\\d+\\.\\d+"),
 );
-if (!spelled.test(readme)) {
+if (!spelled.test(install)) {
   throw new Error(
-    `install-targets: ${CLAIM} no longer spells a file of the shape ` +
+    `install-targets: ${INSTALL} no longer spells a file of the shape ` +
       `"${psAsset[1]}", so ${WINDOWS} is the only statement of what a release ` +
       `publishes for Windows and this script has nothing to cross-check.`,
   );
 }
 
-/* The prose name, in README.md's own words. The pattern is built from the
- * target's own components and the aliases above, and what is recorded is the
- * text README.md matched with, so the spelling a reader is shown is the
- * repository's and never this file's. */
-const spell = (part) => ALIAS.get(part) ?? part;
 const [windowsOs, windowsArch] = windowsTarget.split("-");
-const spoken = new RegExp(
-  `\\b${spell(windowsOs)}[ -]${spell(windowsArch).replace(/[-_]/g, "[-_]")}\\b`,
-  "i",
-).exec(readme);
-if (!spoken) {
-  throw new Error(
-    `install-targets: ${CLAIM} never names ${windowsTarget} in prose, so ` +
-      `there is no sentence in the repository to take the name beside the zip ` +
-      `from. The other targets take theirs from the sentence under the ` +
-      `one-liner; this one is named wherever the README names it.`,
-  );
-}
+const windowsMachine = spoken(windowsOs, windowsArch, windowsTarget);
 
 const commit = execFileSync("git", ["-C", repo, "rev-parse", "--short", "HEAD"], {
   encoding: "utf8",
@@ -386,7 +413,7 @@ const record = {
   provenance: {
     generator: "scripts/install-targets.mjs",
     source: `${SOURCE}, ${WINDOWS}`,
-    claim: CLAIM,
+    claim: `${CLAIM}, ${INSTALL}`,
     commit,
   },
   repo: slug[1],
@@ -401,7 +428,7 @@ const record = {
   windows: {
     source: WINDOWS,
     target: windowsTarget,
-    machine: spoken[0],
+    machine: windowsMachine,
     asset: psAsset[1],
     download: psBase[1].replace("$Repo", slug[1]),
   },

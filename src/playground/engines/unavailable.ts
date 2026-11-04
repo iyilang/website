@@ -34,9 +34,9 @@ import type {
  */
 const MISSING: string[] = [
   "no engine registered in src/playground/registry.ts",
-  "the compiler is a native program: building it needs LLVM 19 and a Crystal compiler to bootstrap from (README.md)",
-  "wasm32-wasi is a supported target, and one of the four that CI runs every build, under wasmtime (README.md)",
-  "but a wasm32-wasi module becomes a program only once wasi-libc's entry stub is linked in, and this fork prints cc --target=wasm32-wasi for that target rather than wasm-ld (README.md)",
+  "the compiler is a native program: building it needs LLVM and a Crystal compiler to bootstrap from (INSTALL.md)",
+  "wasm32-wasi is a supported target, and one of the five that CI runs every build, under wasmtime (INSTALL.md)",
+  "but a wasm32-wasi program is linked by a wasi toolchain's cc, not by a bare linker, and has no concurrency runtime (INSTALL.md)",
   "so a browser engine needs a link step and a wasi host in the page, not only a compiler",
   "and the page cannot be cross-origin isolated on GitHub Pages, so no SharedArrayBuffer, no wasm threads, no synchronous stdin (see src/playground/types.ts)",
 ];

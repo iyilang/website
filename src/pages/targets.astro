@@ -3,7 +3,7 @@
  * The platforms, with what CI proves about each.
  *
  * The list and the run set come from src/generated/targets.json, which
- * scripts/targets.mjs reads out of the workflow and README. What is new here
+ * scripts/targets.mjs reads out of the workflow, README and INSTALL.md. What is new here
  * is src/generated/proofs.json: scripts/proofs.mjs reads the same workflow for
  * the two loops and the job graph, so the page can separate three claims that
  * are usually collapsed into the word "supported" - the library type-checks,
@@ -84,7 +84,7 @@ const audit = proofs.loops.audit;
  * the Windows GNU target, which the type-check loop calls x86_64-w64-mingw32
  * and the audit loop calls x86_64-windows-gnu: one platform, two of the
  * compiler's names for it. scripts/proofs.mjs maps it and then checks its
- * audited set against the one scripts/targets.mjs derives from README, so a
+ * audited set against the one scripts/targets.mjs derives from INSTALL.md, so a
  * real divergence fails the build instead of reaching this paragraph. */
 const otherSpelling = audit.values.filter(
   (target) => !platforms.typechecked.includes(target),

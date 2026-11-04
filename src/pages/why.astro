@@ -17,7 +17,6 @@ const bin = facts.recorded.hello_binary;
 const front = facts.recorded.front_end;
 const pack = facts.recorded.context_pack;
 const runtime = facts.recorded.runtime;
-const lib = facts.recorded.library_size;
 
 const ratios = loop.ratios as number[];
 const loopBand = `${Math.min(...ratios).toFixed(2)}x to ${Math.max(...ratios).toFixed(2)}x across ${loop.sessions.length} published sessions. The seconds moved; the ratio held, which is why the ratio is the claim.`;
@@ -47,7 +46,7 @@ const ranCount = SPELLED[platforms.ran.length] ?? String(platforms.ran.length);
 const ranHow = platforms.ran.map((t) => platforms.how[t as keyof typeof platforms.how]);
 
 /* The object audit and the Windows jobs, as the live page states them: the
- * audit count and its exceptions read out of README.md by
+ * audit count and its exceptions read out of INSTALL.md by
  * scripts/targets.mjs, the Windows jobs counted out of the workflow by
  * scripts/proofs.mjs, so neither is typed here. */
 const auditedCount = SPELLED[platforms.audited.length] ?? String(platforms.audited.length);
@@ -290,9 +289,8 @@ const shards = ["kemal", "db", "ameba", "sqlite3"];
           iyi generates native code through LLVM. At run time the two
           libraries are within noise where they do the same work. What changes
           is what a program carries: it links only what it uses, and iyi's own
-          library is <Measure of="prelude" /> lines against Crystal's{" "}
-          {lib.crystal.toLocaleString("en-GB")}, <Measure of="prelude_kb" unit="KB" />{" "}
-          on disk beside the binary.
+          library is <Measure of="prelude" /> lines, written to be linked that
+          way, <Measure of="prelude_kb" unit="KB" /> on disk beside the binary.
         </p>
       </div>
       <div class="split">
