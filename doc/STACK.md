@@ -43,8 +43,9 @@ site/
                             reads the iyi tree at it, and refuses a recording
                             taken from anything else
     facts.mjs               runs bench/site_facts.py, writes generated/facts.json
-    targets.mjs             reads the platforms out of iyi's CI workflow and the
-                            run set out of README.md, writes generated/targets.json
+    targets.mjs             reads the platforms out of iyi's CI workflow, the
+                            run set out of README.md and the object audit out
+                            of INSTALL.md, writes generated/targets.json
     releases.mjs            reads CHANGELOG.md's release headings, writes
                             generated/releases.json
     samples.mjs             transcludes samples/iyi, samples/tour, records/break
@@ -76,12 +77,12 @@ This is the load-bearing part, and it is the reason the site cannot drift.
 repository through `bench/site_facts.py`, which has two sources. Structural
 numbers come from `bench/doc_numbers.py`'s `measured()`, the same function that
 already gates `README.md` in CI, so the page and the gate cannot disagree.
-Recorded numbers (seconds, bytes, milliseconds) are parsed out of `README.md`,
-because that is where this project publishes them, and they are emitted only as
-groups carrying the machine that produced them, the command that prints them,
-and every session the README publishes. If any pattern stops matching, the
-script fails rather than defaulting, which is the same rule
-`bench/doc_numbers.py` applies to itself.
+Recorded numbers (seconds, bytes, milliseconds) are parsed out of `README.md`
+and `BENCHMARKS.md`, because that is where this project publishes them, and
+they are emitted only as groups carrying the machine that produced them, the
+command that prints them, and every session BENCHMARKS.md publishes. If any
+pattern stops matching, the script fails rather than defaulting, which is the
+same rule `bench/doc_numbers.py` applies to itself.
 
 The build chain runs `bench/site_facts.py` and writes
 `src/generated/facts.json`. The components read that file. `Measure`

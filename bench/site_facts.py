@@ -22,20 +22,23 @@ against whatever else in the repository states it. A structural number can be
 stated flatly.
 
 RECORDED. Seconds, bytes, milliseconds. These are a machine, not a language,
-and README.md is scrupulous about saying so: it names the exact box and it
-publishes other sessions reading 0.16 / 1.29 / 0.19 and 0.22 / 1.81 / 0.27
-where the table's read 0.13 / 1.17 / 0.16. So a recorded number is never emitted on its own. It is
-emitted as a group carrying the machine that produced it, the command that
-prints it, and every session README.md publishes, so the site can draw the
-spread and lead with the ratio. The ratio is the claim. The second is a
-circumstance.
+and the repository is scrupulous about saying so: BENCHMARKS.md names the
+exact box and publishes other sessions reading 0.16 / 1.29 / 0.19 and
+0.22 / 1.81 / 0.27 where the table's read 0.13 / 1.17 / 0.16. So a recorded
+number is never emitted on its own. It is emitted as a group carrying the
+machine that produced it, the command that prints it, and every session
+BENCHMARKS.md publishes, so the site can draw the spread and lead with the
+ratio. The ratio is the claim. The second is a circumstance.
 
-README.md is the source for the recorded class because that is where this
-project publishes these measurements. Parsing it means the site restates the
-repository rather than remembering it. When a pattern below stops matching,
-that is a failure and not a default: a sentence this was written to cover was
-reworded, so the site would be quoting something nobody is maintaining. Same
-rule `doc_numbers.py` already applies to itself.
+README.md and BENCHMARKS.md are the source for the recorded class because
+that is where this project publishes these measurements: the claims a reader
+meets first in README.md, and since 0.20.1 the build, run-time and server
+tables behind them in BENCHMARKS.md. Each pattern below names the file it
+reads. Parsing them means the site restates the repository rather than
+remembering it. When a pattern stops matching, that is a failure and not a
+default: a sentence this was written to cover was reworded or moved, so the
+site would be quoting something nobody is maintaining. Same rule
+`doc_numbers.py` already applies to itself.
 """
 
 from __future__ import annotations
@@ -64,7 +67,8 @@ from doc_numbers import WORDS, measured  # noqa: E402
 
 
 def flat(text: str) -> str:
-    """README.md wraps at about 80 columns, so match against one long line."""
+    """The repository's prose wraps at about 80 columns, so match against one
+    long line."""
     return re.sub(r"\s+", " ", text)
 
 
@@ -301,74 +305,85 @@ def context_scope() -> dict:
     }
 
 
-# (key, pattern, group names). A miss is an error, never a default.
-RECORDED_PATTERNS: list[tuple[str, str, tuple[str, ...]]] = [
-    ("machine", r"\(([^()]*Ryzen[^()]*)\)", ("name",)),
+# The two files the recorded class is published in.
+README = "README.md"
+BENCHMARKS = "BENCHMARKS.md"
+
+# (key, file, pattern, group names). A miss is an error, never a default.
+RECORDED_PATTERNS: list[tuple[str, str, str, tuple[str, ...]]] = [
+    ("machine", BENCHMARKS, r"\(([^()]*Ryzen[^()]*)\)", ("name",)),
     (
         "edit_loop",
+        BENCHMARKS,
         r"\| \*\*one module's body\*\* \| \*\*([\d.]+)\*\* \| ([\d.]+) \| ([\d.]+) \|",
         ("iyi", "crystal", "go"),
     ),
     (
         "edit_loop_sessions",
+        BENCHMARKS,
         r"other sessions on the same box read (\d+\.\d+ / \d+\.\d+ / \d+\.\d+) and\s+"
         r"(\d+\.\d+ / \d+\.\d+ / \d+\.\d+) on the first row",
         ("a", "b"),
     ),
-    ("edit_loop_ratio", r"costs \*\*([\d.]+)x less\*\*", ("times",)),
+    ("edit_loop_ratio", README, r"costs \*\*([\d.]+)x less\*\*", ("times",)),
     (
         "hello_binary",
+        README,
         r"is a (?:\*\*)?([\d,]+) KB(?:\*\*)? binary that starts in (?:\*\*)?([\d.]+) ms",
         ("kb", "ms"),
     ),
     (
         "crystal_binary",
+        README,
         r"library is ([\d,]+) KB and ([\d.]+) ms",
         ("kb", "ms"),
     ),
     (
         "full_build",
+        BENCHMARKS,
         r"\| generated pair, ([\d,]+) lines \| ([\d.]+) s \| \*\*([\d.]+) s\*\* \|",
         ("lines", "iyi", "go"),
     ),
     (
         "hello_build",
+        BENCHMARKS,
         r"\| `hello` \(([\d,]+) lines\) \| \*\*([\d.]+) s\*\* \| ([\d.]+) s \|",
         ("lines", "iyi", "go"),
     ),
-    ("front_end", r"answers `hello` in \*\*([\d.]+) s\*\*", ("seconds",)),
+    ("front_end", README, r"answers `hello` in \*\*([\d.]+) s\*\*", ("seconds",)),
     (
         "runtime_string",
+        BENCHMARKS,
         r"\| string building \| ([\d.]+)x \| \*\*([\d.]+)x\*\* \|",
         ("as_it_runs", "gc_off"),
     ),
     (
         "runtime_hash",
+        BENCHMARKS,
         r"\| hash insert and read \| ([\d.]+)x \| ([\d.]+)x \|",
         ("as_it_runs", "gc_off"),
     ),
     (
         "runtime_array",
+        BENCHMARKS,
         r"\| array append and read \| ([\d.]+)x \| ([\d.]+)x \|",
         ("as_it_runs", "gc_off"),
     ),
     (
         "runtime_arithmetic",
+        BENCHMARKS,
         r"\| arithmetic \| ([\d.]+)x \| ([\d.]+)x \|",
         ("as_it_runs", "gc_off"),
     ),
     (
-        "prelude_vs_crystal",
-        r"([\d,]+) lines of Crystal's standard library instead of ([\d,]+)",
-        ("crystal", "iyi"),
-    ),
-    (
         "context_pack",
+        README,
         r"at \*\*(\d+)–(\d+)%\*\* of the sources' size",
         ("size_low", "size_high"),
     ),
     (
         "context_tokens",
+        README,
         r"\*\*(\d+)–(\d+)% fewer prompt tokens\*\*",
         ("low", "high"),
     ),
@@ -380,17 +395,19 @@ RECORDED_PATTERNS: list[tuple[str, str, tuple[str, ...]]] = [
     # up, and the site says that rather than a count nobody maintains.
     (
         "context_runs",
+        README,
         r"over the runs written up in ([A-Z_]+\.md §\d+)",
         ("where",),
     ),
     (
         "context_rounds",
+        README,
         r"rounds to green tied ([a-z]+) times and lost\s+([a-z]+)\.",
         ("tied", "lost"),
     ),
 ]
 
-# Which command prints each recorded group, quoted from README.md's own
+# Which command prints each recorded group, quoted from the repository's own
 # attribution of it. The site shows this beside the number.
 COMMANDS: dict[str, str] = {
     "edit_loop": "python3 bench/incremental.py",
@@ -421,16 +438,16 @@ MACHINES: dict[str, str] = {
 }
 
 
-def recorded(readme: str) -> tuple[dict, list[str]]:
-    text = flat(readme)
+def recorded() -> tuple[dict, list[str]]:
+    texts = {name: flat((REPO / name).read_text()) for name in (README, BENCHMARKS)}
     out: dict = {}
     missing: list[str] = []
-    for key, pattern, names in RECORDED_PATTERNS:
-        m = re.search(pattern, text)
+    for key, source, pattern, names in RECORDED_PATTERNS:
+        m = re.search(pattern, texts[source])
         if not m:
             missing.append(
-                f"{key}: /{pattern}/ no longer matches README.md. The sentence "
-                f"this quoted was reworded or removed, so the site would be "
+                f"{key}: /{pattern}/ no longer matches {source}. The sentence "
+                f"this quoted was reworded or moved, so the site would be "
                 f"publishing a number nobody is maintaining"
             )
             continue
@@ -439,16 +456,18 @@ def recorded(readme: str) -> tuple[dict, list[str]]:
 
 
 def sessions(raw: dict) -> list[dict[str, float]]:
-    """Every session README.md publishes for the edit loop, not just the best.
+    """Every session BENCHMARKS.md publishes for the edit loop, not just the
+    best.
 
-    The spread is the point. README.md prints three readings and says to read
-    the columns against each other because they pay the same machine together,
-    so the site draws all of them and leads with the ratio they agree on.
+    The spread is the point. BENCHMARKS.md prints three readings and says to
+    read the columns against each other because they pay the same machine
+    together, so the site draws all of them and leads with the ratio they
+    agree on.
 
-    README.md prints a third column, another compiler's, on the same row. The
-    site publishes iyi against the compiler it forked and nothing else, so that
-    column is parsed, because a drift in the row is still a drift, and then
-    dropped.
+    BENCHMARKS.md prints a third column, another compiler's, on the same row.
+    The site publishes iyi against the compiler it forked and nothing else, so
+    that column is parsed, because a drift in the row is still a drift, and
+    then dropped.
     """
     # The table's own row is the first reading; the sentence under it gives
     # the other two sessions.
@@ -465,8 +484,8 @@ def machine(name: str) -> str:
 
 
 def build() -> tuple[dict, list[str]]:
-    readme = (REPO / "README.md").read_text()
-    raw, missing = recorded(readme)
+    readme = (REPO / README).read_text()
+    raw, missing = recorded()
     if missing:
         return {}, missing
 
@@ -487,7 +506,7 @@ def build() -> tuple[dict, list[str]]:
         "recorded": {
             "edit_loop": {
                 # The claim, which is machine-independent and held across every
-                # session README.md publishes.
+                # session BENCHMARKS.md publishes.
                 "claim": {
                     "kind": "ratio",
                     "value": float(raw["edit_loop_ratio"]["times"]),
@@ -547,14 +566,6 @@ def build() -> tuple[dict, list[str]]:
                 "command": COMMANDS["runtime_string"],
                 "subject": "the same program under both libraries",
             },
-            "library_size": {
-                "iyi": int(raw["prelude_vs_crystal"]["iyi"].replace(",", "")),
-                "crystal": int(raw["prelude_vs_crystal"]["crystal"].replace(",", "")),
-                "unit": "lines",
-                "machine": None,
-                "command": "python3 bench/doc_numbers.py",
-                "subject": "what a program has",
-            },
             "front_end": {
                 "seconds": float(raw["front_end"]["seconds"]),
                 "unit": "s",
@@ -586,7 +597,7 @@ def build() -> tuple[dict, list[str]]:
                 "bench/doc_numbers.py measured(), the bench's own project "
                 "generator, and git"
             ),
-            "recorded_source": "README.md, parsed",
+            "recorded_source": "README.md and BENCHMARKS.md, parsed",
             "generator": "bench/site_facts.py",
         },
     }
