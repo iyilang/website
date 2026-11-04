@@ -8,7 +8,7 @@
  * reader's own first: `src/components/Platform.astro` is the switch and
  * `src/lib/platform.ts` is what it decides on.
  *
- * Every command on this page is quoted out of README.md by
+ * Every command on this page is quoted out of README.md or INSTALL.md by
  * scripts/samples.mjs, and every file name and URL is built from what the two
  * installers themselves ask a release for, through
  * scripts/install-targets.mjs. A machine's name is README.md's own word for
@@ -177,8 +177,8 @@ const tarballs = assets.map((asset) => asset.target).join(" or ");
         <p class="p">
           Other platforms, or the current tree rather than a release: clone the
           repository and <code>make</code>. It needs a Crystal compiler to
-          bootstrap from and LLVM; the README's{" "}
-          <a href="https://github.com/iyilang/iyi#getting-it">Getting it</a>{" "}
+          bootstrap from and LLVM; INSTALL.md's{" "}
+          <a href="https://github.com/iyilang/iyi/blob/master/INSTALL.md#from-source">From source</a>{" "}
           section names the versions and every command.
         </p>
         <a class="link" href="https://github.com/iyilang/iyi">github.com/iyilang/iyi →</a>

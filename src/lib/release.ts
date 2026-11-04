@@ -5,7 +5,7 @@
  * recorded them. A version number and a target name are facts about the tree
  * like any other figure here, so neither is typed into a page: one generator
  * refuses to write a record whose changelog states no release, the other
- * refuses one whose installers and README disagree about what a release
+ * refuses one whose installers and install docs disagree about what a release
  * ships.
  *
  * The site does not publish the changelog itself. So everything here that
@@ -53,7 +53,7 @@ export function releaseUrl(release: Release = latestRelease()): string {
  *
  * Nothing here is written down twice. `scripts/install-targets.mjs` reads the
  * targets out of the installer's own `case` arms, cross-checks them against the
- * refusal it prints and against README.md, and carries the `asset=` and
+ * refusal it prints and against README.md and INSTALL.md, and carries the `asset=` and
  * `base=` strings across with `$version` and `$target` still in them; this
  * fills those in from the recorded release. The pairs were a literal here
  * until then, which meant a third published tarball would have appeared

@@ -19,7 +19,7 @@ bought: >-
   every push, so the boundary is a gate rather than a claim.
 sources:
   - file: README.md
-    note: the two console sequences, quoted with their lines on each block, and the paragraph under the first one
+    note: the console sequence, quoted with its lines on the block, the paragraph under it, and the sentence that does the same to the Kemal port
   - file: samples/iyi/app/greeter.iyi
     note: the library the two builds import, shown whole
   - file: samples/iyi/modules.iyi
@@ -84,11 +84,11 @@ and no bodies at all. `greeting` is missing from it, because it never carried
 
 Two files is a demonstration. A web framework is a test.
 
-<Quote id="library_deleted" as="console" />
-
 `samples/iyi/webapp.iyi` is a port of Kemal onto iyi's rules, and its router
-lives in `samples/iyi/kemal`. That whole directory goes away between the two
-builds, and the program still builds, links, runs, and prints the same output.
+lives in `samples/iyi/kemal`. README.md takes it through the same three steps:
+build with `--emit-iyimod mods`, `rm -rf samples/iyi/kemal`, and build again with
+`--use-iyimod mods`. That whole directory goes away between the two builds, and
+the program still builds, links, runs, and prints the same output.
 
 ## The roundtrip gate
 
@@ -108,8 +108,8 @@ is to take the source away and see whether the build still produces a program
 that behaves.
 
 What that boundary saves in seconds belongs to a machine rather than to a
-language, so this page will not quote you a number. README.md publishes them with
-the machine attached and the command that measures them.
+language, so this page will not quote you a number. BENCHMARKS.md publishes them
+with the machine attached and the command that measures them.
 
 ## Acyclic imports
 
