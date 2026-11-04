@@ -41,6 +41,9 @@ const out = resolve(site, "src", "generated");
 
 const WORKFLOW = ".github/workflows/iyi.yml";
 const CLAIM = "README.md";
+/* Where the object audit is stated. It was README.md's FAQ until 0.20.1,
+ * which moved the targets to INSTALL.md and left the portability row behind. */
+const AUDIT_CLAIM = "INSTALL.md";
 
 /**
  * Spellings the repository uses for one thing. A triple says `x86_64` and
@@ -104,23 +107,23 @@ const claimed = (() => {
 /**
  * The targets whose emitted object CI reads, and the two it does not.
  *
- * A third reading of the same file, added because the why page had said "the
+ * A third reading of the same claim, added because the why page had said "the
  * rest type-check and have the object they emit audited", which is one claim
- * too strong: README.md's own FAQ says the audit covers seven of the nine and
- * names the two it misses. A page that overclaims a check is the same defect
- * as a page that overstates a figure, and it is worse here, because the check
- * is the thing the page is offering as evidence.
+ * too strong: INSTALL.md's Targets section says the audit covers seven of the
+ * nine and names the two it misses. A page that overclaims a check is the
+ * same defect as a page that overstates a figure, and it is worse here,
+ * because the check is the thing the page is offering as evidence.
  *
  * The count is cross-checked against the exceptions: seven audited plus two
  * named has to be the nine the workflow type-checks, or one of the two
  * sentences has moved and neither can be trusted.
  */
 const audit = (() => {
-  const text = read(CLAIM);
+  const text = read(AUDIT_CLAIM);
   const counted = text.match(/audits the emitted object\s+for\s+(\S+)\s+of\s+the\s+nine/);
   if (!counted) {
     throw new Error(
-      `targets: ${CLAIM} no longer says how many triples CI audits the ` +
+      `targets: ${AUDIT_CLAIM} no longer says how many triples CI audits the ` +
         `emitted object for, so the site cannot say which of them it does.`,
     );
   }
@@ -129,7 +132,7 @@ const audit = (() => {
   );
   if (exempt.length === 0) {
     throw new Error(
-      `targets: ${CLAIM} says the object audit covers ${counted[1]} triples ` +
+      `targets: ${AUDIT_CLAIM} says the object audit covers ${counted[1]} triples ` +
         `and names none of the ones it leaves out. The sentence that named ` +
         `them has moved, so the site would be publishing an exception list ` +
         `it cannot see.`,
@@ -138,7 +141,7 @@ const audit = (() => {
   for (const triple of exempt) {
     if (!typechecked.includes(triple)) {
       throw new Error(
-        `targets: ${CLAIM} exempts ${triple} from the object audit and ` +
+        `targets: ${AUDIT_CLAIM} exempts ${triple} from the object audit and ` +
           `${WORKFLOW} does not type-check it at all, so the two files ` +
           `disagree about what the platform list even is.`,
       );
@@ -229,14 +232,14 @@ if (facts.structural.targets !== typechecked.length) {
   );
 }
 
-/* The audit's own arithmetic: the triples it covers plus the ones README
+/* The audit's own arithmetic: the triples it covers plus the ones INSTALL.md
  * exempts have to be the whole list. A sentence that said seven while the
  * exemption named one would leave a triple in neither set, and the page would
  * be silent about it rather than wrong about it, which is harder to notice. */
 const audited = typechecked.filter((triple) => !audit.exempt.includes(triple));
 if (SPELLED[audited.length] !== audit.count) {
   throw new Error(
-    `targets: ${CLAIM} says the object audit covers ${audit.count} triples, ` +
+    `targets: ${AUDIT_CLAIM} says the object audit covers ${audit.count} triples, ` +
       `and exempting ${audit.exempt.join(" and ")} from ${typechecked.length} ` +
       `leaves ${audited.length}. The two sentences no longer agree.`,
   );
@@ -256,7 +259,13 @@ writeFileSync(
   resolve(out, "targets.json"),
   `${JSON.stringify(
     {
-      provenance: { generator: "scripts/targets.mjs", source: WORKFLOW, claim: CLAIM, commit },
+      provenance: {
+        generator: "scripts/targets.mjs",
+        source: WORKFLOW,
+        claim: CLAIM,
+        auditClaim: AUDIT_CLAIM,
+        commit,
+      },
       typechecked,
       ran,
       audited,

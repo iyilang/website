@@ -219,7 +219,7 @@ const ALIAS = new Map([["x86_64-windows-gnu", "x86_64-w64-mingw32"]]);
 const auditedHere = audit.values.map((target) => ALIAS.get(target) ?? target);
 
 // And the same gate over the audit set. scripts/targets.mjs derives it from
-// README's sentence about which targets are exempt; this script reads the loop
+// INSTALL.md's sentence about which targets are exempt; this script reads the loop
 // itself. Two independent readings of one fact, so a disagreement means one of
 // them is wrong rather than that the page has a choice to make.
 if (Array.isArray(published.audited)) {
@@ -232,7 +232,7 @@ if (Array.isArray(published.audited)) {
       `the audit loop covers ${auditedHere.join(", ")} and ` +
         `src/generated/targets.json says ${published.audited.join(", ")}. ` +
         `They differ on ${[...new Set(apart)].join(", ")}. One reads the ` +
-        `workflow and one reads README.md: a page cannot publish both.`,
+        `workflow and one reads INSTALL.md: a page cannot publish both.`,
     );
   }
 }
