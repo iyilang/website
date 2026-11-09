@@ -128,12 +128,37 @@ if (summary && summary.length > DESCRIPTION_MAX) {
 const canonical = new URL(here, Astro.site).href;
 const ogImage = new URL(href("og.png"), Astro.site).href;
 
-/* Structured data. The site and its subject on every page; the page itself
- * typed by what it is. Search engines and answer engines read this before
- * they read prose. */
+/* Structured data. The site, the project behind it and the language on every
+ * page; the page itself typed by what it is. Search engines and answer engines
+ * read this before they read prose.
+ *
+ * The accounts are the project's, so they hang off the Organization; the
+ * language's own `sameAs` is its repository. Answer engines match a name to
+ * an entity through these, and "iyi" is a common Turkish word, so the more
+ * of them agree the less the name is read as the word. */
+const organization = `${Astro.site}#organization`;
 const ld = {
   "@context": "https://schema.org",
   "@graph": [
+    {
+      "@type": "Organization",
+      "@id": organization,
+      name: alias,
+      alternateName: siteName,
+      url: Astro.site,
+      logo: {
+        "@type": "ImageObject",
+        url: new URL(href("favicon-512.png"), Astro.site).href,
+        width: 512,
+        height: 512,
+      },
+      sameAs: [
+        "https://github.com/iyilang",
+        "https://www.reddit.com/r/iyilang/",
+        "https://discord.gg/hKYtbSNTx2",
+        "https://x.com/iyi_lang",
+      ],
+    },
     {
       "@type": "WebSite",
       "@id": `${Astro.site}#website`,
@@ -143,6 +168,7 @@ const ld = {
       description:
         "iyi is a friendly, fast programming language for people and their agents, compatible with Crystal.",
       inLanguage: "en",
+      publisher: { "@id": organization },
     },
     {
       "@type": "SoftwareSourceCode",
@@ -153,12 +179,9 @@ const ld = {
         "A compiled programming language whose modules compile against their dependencies' declarations, never their bodies. Compatible with Crystal: the same compiler builds .cr files, and iyi build --crystal gives a program Crystal's standard library and shards.",
       programmingLanguage: "iyi",
       codeRepository: "https://github.com/iyilang/iyi",
-      sameAs: [
-        "https://github.com/iyilang/iyi",
-        "https://www.reddit.com/r/iyilang/",
-        "https://discord.gg/hKYtbSNTx2",
-        "https://x.com/iyi_lang",
-      ],
+      sameAs: ["https://github.com/iyilang/iyi"],
+      author: { "@id": organization },
+      publisher: { "@id": organization },
       version: release.version,
       dateModified: release.date,
       license: "https://www.apache.org/licenses/LICENSE-2.0",
@@ -176,6 +199,7 @@ const ld = {
       description: summary,
       isPartOf: { "@id": `${Astro.site}#website` },
       about: { "@id": `${Astro.site}#iyi` },
+      publisher: { "@id": organization },
       inLanguage: "en",
     },
   ],
