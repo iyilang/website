@@ -2,7 +2,7 @@ import { defineConfig } from "astro/config";
 import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
 import { unified } from "@astrojs/markdown-remark";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 // GitHub Pages serves this repository at `iyi.dev` (the CNAME under public/,
 // which the build copies into dist/ - so the domain is this file's and a
@@ -25,12 +25,36 @@ const unlisted = new Set(
     .map((document) => new URL(`${base.replace(/\/$/, "")}/project/${document.id}/`, site).href),
 );
 
+// A sitemap entry's lastmod is the page's own `dateModified`, read back out of
+// the page src/layouts/Page.astro wrote. The sitemap is written after every
+// page is (the integration runs when the build is done), so the date a
+// crawler is given here and the date the page states are one date, decided in
+// one place. A page this cannot find or read gets no lastmod rather than a
+// guessed one.
+const outDir = new URL("./dist/", import.meta.url);
+const pageDate = (url) => {
+  const path = new URL(url).pathname.slice(base.replace(/\/*$/, "/").length);
+  const file = new URL(`${path}index.html`, outDir);
+  if (!existsSync(file)) return undefined;
+  const html = readFileSync(file, "utf8");
+  const json = /<script type="application\/ld\+json">(.*?)<\/script>/s.exec(html)?.[1];
+  if (json === undefined) return undefined;
+  const page = JSON.parse(json)["@graph"].find((node) => node["@id"]?.endsWith("#page"));
+  return page?.dateModified;
+};
+
 export default defineConfig({
   site,
   base,
   output: "static",
   trailingSlash: "always",
-  integrations: [mdx(), sitemap({ filter: (page) => !unlisted.has(page) })],
+  integrations: [
+    mdx(),
+    sitemap({
+      filter: (page) => !unlisted.has(page),
+      serialize: (item) => ({ ...item, lastmod: pageDate(item.url) ?? item.lastmod }),
+    }),
+  ],
 
   // A lesson's URL is its file name, and a published URL outlives a rename:
   // the old one answers with a page that sends the reader to the new one.

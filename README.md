@@ -38,6 +38,11 @@ The scripts look for an iyi checkout beside this one, named `iyi`, or wherever
 `.gitattributes` checks this tree out with LF, and the generators read the
 iyi files that tree does not pin to LF as LF.
 
+`scripts/modified.mjs` dates each page by the last commit to its source under
+`src/pages` or `src/content`, for the page's `dateModified` and its sitemap
+`lastmod`, so it needs this repository's full history: a shallow clone fails
+the build by name rather than dating every page to one commit.
+
 `bench/website_citations.py` checks that every path the documents under `doc/`
 cite exists, in this tree or in iyi's.
 

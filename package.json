@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "generate": "node scripts/fonts.mjs && node scripts/facts.mjs && node scripts/targets.mjs && node scripts/proofs.mjs && node scripts/releases.mjs && node scripts/install-targets.mjs && node scripts/samples.mjs && node scripts/thesis.mjs && node scripts/project.mjs && node scripts/download.mjs && node scripts/records.mjs && node scripts/stdlib.mjs && node scripts/contrast.mjs && node scripts/no-transcription.mjs && node scripts/blocker.mjs",
+    "generate": "node scripts/fonts.mjs && node scripts/facts.mjs && node scripts/targets.mjs && node scripts/proofs.mjs && node scripts/releases.mjs && node scripts/modified.mjs && node scripts/install-targets.mjs && node scripts/samples.mjs && node scripts/thesis.mjs && node scripts/project.mjs && node scripts/download.mjs && node scripts/records.mjs && node scripts/stdlib.mjs && node scripts/contrast.mjs && node scripts/no-transcription.mjs && node scripts/blocker.mjs",
     "generate:install-targets": "node scripts/install-targets.mjs",
     "record:wasm": "node scripts/record-wasm.mjs",
     "record:diagnostics": "node scripts/record-diagnostics.mjs",
