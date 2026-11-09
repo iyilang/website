@@ -1,10 +1,10 @@
 {
   "recorded": {
-    "compiler": "iyi 0.20.1 (built on Crystal 1.22.0-dev [91d012b1e] (2026-11-04))",
-    "commit": "91d012b1ed978c7df5cc033624ec161a2daf01b6",
+    "compiler": "iyi 0.21.0 (built on Crystal 1.22.0-dev [08ce6c1cb] (2026-11-09))",
+    "commit": "08ce6c1cb2ba5768b15485dbbd6413fcb17df19a",
     "machine": "Linux 7.0.0-38-generic x86_64, QEMU Virtual CPU version 2.5+",
     "command": "npm run record:agent",
-    "when": "2026-11-04T04:32:53.960Z"
+    "when": "2026-11-09T17:40:45.851Z"
   },
   "project": [
     {
@@ -44,7 +44,7 @@
       "command": "iyi mod context --json app.iyi",
       "exitCode": 0,
       "payload": "stdout",
-      "stdout": "{\"file\":\"agent/app.iyi\",\"imports\":[{\"import\":\"app/greeter\",\"api\":{\"module\":\"app/greeter\",\"interface_hash\":\"f2f9576ba7e3996e204d5c93ccf5f42d\",\"functions\":[{\"name\":\"polite\",\"parameters\":[\"name : String\"],\"returns\":\"String\",\"doc\":\"The exported surface carries its doc comment, so the grounding pack an agent\\nreads says what the function is for and not only what it takes.\",\"rendered\":\"def polite(name : String) : String\"},{\"name\":\"shout\",\"parameters\":[\"name : String\"],\"returns\":\"String\",\"rendered\":\"def shout(name : String) : String\"}],\"types\":[{\"name\":\"Greet\",\"kind\":\"trait\",\"visibility\":\"pub\",\"methods\":[{\"name\":\"greet\",\"parameters\":[],\"returns\":\"String\",\"required\":true,\"rendered\":\"abstract def greet : String\"}]}],\"impls\":[]}}]}\n",
+      "stdout": "{\"file\":\"agent/app.iyi\",\"imports\":[{\"import\":\"app/greeter\",\"api\":{\"module\":\"app/greeter\",\"interface_hash\":\"dadbf4541512680f291862fd67e8fbcf\",\"functions\":[{\"name\":\"polite\",\"parameters\":[\"name : String\"],\"returns\":\"String\",\"doc\":\"The exported surface carries its doc comment, so the grounding pack an agent\\nreads says what the function is for and not only what it takes.\",\"rendered\":\"def polite(name : String) : String\"},{\"name\":\"shout\",\"parameters\":[\"name : String\"],\"returns\":\"String\",\"rendered\":\"def shout(name : String) : String\"}],\"types\":[{\"name\":\"Greet\",\"kind\":\"trait\",\"visibility\":\"pub\",\"methods\":[{\"name\":\"greet\",\"parameters\":[],\"returns\":\"String\",\"required\":true,\"rendered\":\"abstract def greet : String\"}]}],\"impls\":[]}}]}\n",
       "stderr": ""
     },
     {
@@ -104,7 +104,7 @@
       "command": "iyi test --json .",
       "exitCode": 0,
       "payload": "stdout",
-      "stdout": "{\"tests\":[{\"file\":\"./app_test.iyi\",\"status\":\"pass\",\"seconds\":0.281}],\"passed\":1,\"failed\":0,\"skipped\":0}\n",
+      "stdout": "{\"tests\":[{\"file\":\"./app_test.iyi\",\"status\":\"pass\",\"seconds\":0.336}],\"passed\":1,\"failed\":0,\"skipped\":0}\n",
       "stderr": ""
     },
     {
@@ -135,7 +135,7 @@
     "bytes": 731,
     "sourceBytes": 707,
     "interfaceHashes": {
-      "app/greeter": "f2f9576ba7e3996e204d5c93ccf5f42d"
+      "app/greeter": "dadbf4541512680f291862fd67e8fbcf"
     }
   },
   "suggested": [
@@ -167,7 +167,7 @@
       },
       "serverInfo": {
         "name": "iyi",
-        "version": "0.20.1"
+        "version": "0.21.0"
       }
     },
     "tools": [

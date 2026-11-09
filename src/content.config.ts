@@ -115,4 +115,39 @@ const learn = defineCollection({
   }),
 });
 
-export const collections = { learn };
+/**
+ * The posts: release announcements, and whatever else the project has to say
+ * on a date.
+ *
+ * A post is the one page on this site that is about a moment rather than about
+ * the tree as it is, so its shape says which moment. `date` is when it was
+ * published and does not move. `release`, where a post announces one, names
+ * the release, and it is checked twice: src/lib/posts.ts refuses a release
+ * CHANGELOG.md does not state, or a post dated before it, and scripts/notes.mjs
+ * reads that release's section out of CHANGELOG.md at its tag, which is what a
+ * post quotes through `ReleaseNote`. So the quotations in an announcement are
+ * the release's own words and stay its words when the next release comes out.
+ *
+ * No figure is typed into a post, for the reason none is typed anywhere here:
+ * scripts/no-transcription.mjs reads src/content. The figures a release
+ * measured are in its notes, with the machines they were measured on.
+ */
+const blog = defineCollection({
+  loader: glob({ base: "./src/content/blog", pattern: "**/*.{md,mdx}" }),
+  schema: z.object({
+    title: z.string().min(1),
+    // What a results page prints under the title, and what the index and the
+    // feed say of the post. Plain text, for the reason a lesson's is.
+    description: z
+      .string()
+      .max(155)
+      .regex(/^[^`]*$/, "description is plain text: no backticks"),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "date is the day it was published, as `2026-11-09`"),
+    release: z
+      .string()
+      .regex(/^\d+\.\d+\.\d+$/, "release is a version CHANGELOG.md states, such as `0.21.0`")
+      .optional(),
+  }),
+});
+
+export const collections = { learn, blog };

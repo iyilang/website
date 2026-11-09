@@ -23,6 +23,13 @@ still takes from CHANGELOG.md is which release is current, which reaches the
 masthead, the home page, the install page and llms.txt through
 `scripts/releases.mjs`.
 
+The blog under `/blog/` is the one authored section about a moment: a post per
+release, in `src/content/blog/`. A post names its release in its frontmatter,
+and what it quotes of that release's notes `scripts/notes.mjs` reads out of
+CHANGELOG.md at the release's tag, so the next release does not change it.
+Write the post after the site has been regenerated at the release (below):
+the build refuses a post for a release CHANGELOG.md does not yet state.
+
 ## Building
 
 The scripts look for an iyi checkout beside this one, named `iyi`, or wherever

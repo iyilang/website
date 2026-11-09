@@ -1,0 +1,85 @@
+---
+/**
+ * The posts, newest first.
+ *
+ * A list and nothing else: a date, a title, the post's own description, and
+ * the release it announces where it announces one. The order and every check
+ * on a post's frontmatter are src/lib/posts.ts's, so this page cannot list a
+ * post the post page would refuse to build.
+ */
+import { Image } from "astro:assets";
+import mascot from "../../assets/mascot.png";
+import Page from "../../layouts/Page.astro";
+import { posts, postHref, longDate } from "../../lib/posts";
+
+const base = import.meta.env.BASE_URL;
+const all = (await posts()).map((post) => ({ post, href: postHref(base, post) }));
+const feed = `${base.replace(/\/$/, "")}/blog/rss.xml`;
+---
+
+<Page
+  kind="Blog"
+  title="Blog"
+  summary="News from the iyi programming language: what each release changes, what a user has to change with it, and where to read the rest."
+>
+  <div class="wrap">
+    <section class="page-hero">
+      <p class="eyebrow">
+        <Image src={mascot} alt="" width={20} height={19} densities={[1, 2]} loading="eager" decoding="async" />
+        Blog
+      </p>
+      <h1 class="h1">What changed, and when</h1>
+      <p class="lead">
+        A post for each release: what it changes, what a program written
+        against the one before has to change, and the release's own notes
+        quoted from its tag.
+      </p>
+      <div class="btns">
+        <a class="button button--ghost" href={feed}>Follow by RSS</a>
+      </div>
+    </section>
+
+    <section class="sec">
+      <ol class="list posts">
+        {
+          all.map(({ post, href }) => (
+            <li>
+              <p class="small meta">
+                <time datetime={post.data.date}>{longDate(post.data.date)}</time>
+                {post.data.release && <span class="chip chip--red">{post.data.release}</span>}
+              </p>
+              <h2 class="h3">
+                <a href={href}>{post.data.title}</a>
+              </h2>
+              <p class="p">{post.data.description}</p>
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+  </div>
+</Page>
+
+<style>
+  .posts {
+    max-width: 780px;
+  }
+  .posts > li {
+    padding: 22px 0;
+    gap: 8px;
+  }
+  .meta {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-mono);
+  }
+  .posts h2 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .posts h2 a:hover {
+    color: var(--brand-deep);
+  }
+</style>

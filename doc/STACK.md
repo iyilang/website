@@ -48,6 +48,8 @@ site/
                             of INSTALL.md, writes generated/targets.json
     releases.mjs            reads CHANGELOG.md's release headings, writes
                             generated/releases.json
+    notes.mjs               reads the section of CHANGELOG.md each post names,
+                            at that release's tag, writes generated/notes.json
     samples.mjs             transcludes samples/iyi, samples/tour, records/break
                             and records/agent into generated/samples/
     record-agent.mjs        recorder: runs the agent loop against a real
@@ -61,10 +63,10 @@ site/
   src/
     styles/                 tokens.css, base.css, code.css
     components/             Measure, Stamped, DurationChart, Sample, Quote,
-                            Compare, Frame, Lifted
+                            Compare, Frame, Lifted, ReleaseNote, Heading
     layouts/Page.astro      masthead, colophon, fonts, styles, scheme switch
     pages/                  index, why, agents, playground, learn, install,
-                            download, targets, project
+                            download, targets, project, blog
     playground/             the slot: types, registry, engines
     generated/              build output, gitignored, never edited
 ```
@@ -132,6 +134,17 @@ The two classes of number are rendered differently by design; see
   repository changes on the site. Renaming a sample a lesson names fails the
   build.
 - **Generated, measured:** all numbers, via the pipeline above.
+- **Authored, quoting a release at its tag:** the posts under `/blog/`, in
+  `src/content/blog/`. A post is the one page about a moment rather than about
+  the tree as it is. Its `release` must be one CHANGELOG.md states and its
+  `date` no earlier than that release's (`src/lib/posts.ts`), and what it
+  quotes of the release's notes is read by `scripts/notes.mjs` out of
+  CHANGELOG.md at the release's tag and set by `ReleaseNote` with the lines it
+  came from, so a later edit to the changelog does not move a sentence in an
+  announcement. A listing or a command a post sets goes through `Sample` and
+  `Quote` like any other page's and follows the current release; a later
+  release that removes what one anchors on fails the build at that post.
+  `/blog/rss.xml` is built from the same list the index renders.
 - **Authored fresh:** the marketing pages and the lessons. SPEC.md is a design
   record, not teaching material, so the learning path is written by hand but is
   grounded in real samples and real README passages, and every factual claim in

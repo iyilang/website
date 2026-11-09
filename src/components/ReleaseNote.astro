@@ -1,0 +1,61 @@
+---
+/**
+ * A block of a release's notes, quoted in a post.
+ *
+ * The text is CHANGELOG.md's at the release's tag, read by scripts/notes.mjs
+ * and found here by a substring through src/lib/posts.ts, so a post cannot
+ * paraphrase its release and call it a quotation, and the line range under
+ * the block is the generator's. Set in the sans, because the notes are prose a
+ * person wrote; the citation is in the mono, because a file and its lines are
+ * the machine's.
+ */
+import { inlineMarkdown } from "../lib/lessons";
+import { releaseNote } from "../lib/posts";
+
+interface Props {
+  release: string;
+  /** A substring of the one block to quote. */
+  find: string;
+}
+
+const { release, find } = Astro.props;
+const note = releaseNote(release, find);
+const lines = note.from === note.to ? `line ${note.from}` : `lines ${note.from} to ${note.to}`;
+---
+
+<blockquote class="note">
+  {note.paragraphs.map((paragraph) => <p set:html={inlineMarkdown(paragraph)} />)}
+  <cite><a href={note.href}>{note.source} at {note.tag}, {lines}</a></cite>
+</blockquote>
+
+<style>
+  .note {
+    margin: 0;
+    padding: 16px 18px;
+    border-radius: 10px;
+    border-left: 3px solid var(--brand);
+    background: var(--raise);
+    font-style: normal;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .note p {
+    margin: 0;
+    font-size: 15.5px;
+    line-height: 1.65;
+    color: var(--ink);
+  }
+  .note p :global(code) {
+    font-size: 0.88em;
+  }
+  .note cite {
+    font-style: normal;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--mute);
+  }
+  .note cite a {
+    color: inherit;
+  }
+</style>

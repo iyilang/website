@@ -1,0 +1,119 @@
+---
+title: "iyi 0.21.0: one spawn verb, parallel where it is safe"
+description: "iyi 0.21.0 gives spawn one verb, runs a plain spawn in parallel where the compiler proves it safe, and makes a module that handles raw memory say so."
+date: "2026-11-09"
+release: "0.21.0"
+---
+
+import ReleaseNote from "../../components/ReleaseNote.astro";
+import Sample from "../../components/Sample.astro";
+import Quote from "../../components/Quote.astro";
+
+iyi 0.21.0 is out. It is a release about tasks: how a program starts one, where
+it runs, and how a test finds the bug that only one order of them shows. It is
+also the release in which a module that reaches memory the compiler does not
+check has to say so. Here is the release in its own words:
+
+<ReleaseNote release="0.21.0" find="A spawn has one verb and names its unit" />
+
+## One verb for a task
+
+There used to be three ways to start a task and two keyword arguments to
+qualify them. Now there is `g.spawn`, and an optional `unit:` that says where
+the task runs. A *unit* is a set of tasks of which at most one runs at a time:
+the main thread with its tasks, a task started with `unit: :new` with the tasks
+it starts, or a `Unit` value.
+
+- `g.spawn { }` lets the compiler place the task.
+- `g.spawn(unit: :new) { }` asks for a unit of its own, on another thread, and
+  holds the block to everything `spawn_parallel` was held to: it may capture
+  only what is `Share`.
+- `g.spawn(unit: :same) { }` keeps the task in its spawner's unit whatever it
+  captures.
+
+The cores sample in the release shows both sides. The first group appends to an
+`Array` it captured, which is not `Share`, so its plain spawns stay on their
+spawner's thread and take turns; the second asks for units of their own and
+hands each answer back once the task ends.
+
+<Sample path="samples/iyi/cores.iyi" from="seen = [] of Int64" to="puts longest" />
+
+## Parallel where the compiler can prove it
+
+A plain `spawn` is no longer always serial. When its block passes every check
+`unit: :new` would apply, and nothing it reaches through its calls is module
+state that is not `Share` (other than state marked `@[SafeReach]`, which the
+compiler now proves rather than trusts), it runs on the pool in a unit of its
+own. Any other spawn stays where it was. Nothing that compiled stops compiling.
+
+You are not left to guess which way a spawn went. `iyi check` notes each spawn
+it kept in its spawner's unit, with the capture or the write that kept it
+there; `--explain-spawn` on `build`, `check` and `run` writes the verdict for
+every spawn; and the language server shows the same verdict as an inlay hint
+after the `spawn`.
+
+For state that only one unit should touch, `std/unit` adds `Unit(T)`: a value
+whose tasks, started with `g.spawn(in: u)`, never run at the same instant as
+each other, the way an actor's do.
+
+## Data parallelism, and tests that shake the schedule
+
+`std/parallel` cuts a `List`, an `Array` or an integer range into chunks across
+the workers: `each_parallel`, `map_parallel`, `sum_parallel` and
+`reduce_parallel`. `map_parallel` answers what `map` does, in order, and a
+failure or a panic in a chunk reaches the caller.
+
+The compiler rules out memory races; ordering races are what is left. `iyi test
+--chaos` runs each test once per seed, and every scheduling choice is drawn from
+the seed: which task runs next, where one is preempted, which ready `select` arm
+goes first. A test that passes only because its tasks happened to run in one
+order fails, and prints the line that replays the same schedule:
+`iyi test --chaos=SEED file`.
+
+## Raw memory says so
+
+Until this release any `.iyi` file could reach memory the compiler does not
+check without ever spelling `Pointer`, through `to_unsafe` and a buffer. Now a
+module whose first statement is `@[Unsafe("why")]` may do that, and every other
+module is refused at its first such operation, with the mark offered as the
+edit. The reason is required.
+
+Most modules that only read or build bytes do not need the mark at all:
+`String#byte_at`, `Bytes.of` and `String.new(Array(UInt8))` do it without raw
+memory. `iyi fix` inserts the mark, the language server offers it as a quick
+fix, and `iyi migrate` writes it into a module whose Crystal source handles raw
+memory.
+
+## Underneath
+
+The runtime got a lot of work that a program does not have to ask for. Each
+channel has a lock of its own. A `std/mutex` lock and its release take two
+locked instructions, and a waiter that starves is handed the lock. The worker
+pool starts one worker and grows to the work. A collection has a ceiling, and a
+size class the program stopped allocating in gives its memory back. A build
+compiles its units on threads of their own, and a `--release` build optimises
+on every core.
+
+Smaller things: `iyi init` with no module path names the project after its
+directory, a path typed in another case on a Mac is the file it names, and two
+pointers compare equal when they hold the same address.
+
+## What you have to change
+
+<ReleaseNote release="0.21.0" find="What a user must change." />
+
+In practice, run `iyi fix` over the project. The old spawn spellings are compile
+errors that name the new one and carry it as an edit, so `iyi fix` rewrites them
+where the call has a block, and it inserts `@[Unsafe("why")]` where a module
+needs it, with a reason for you to replace with the real one. Where a module only
+read or built bytes, moving it to `byte_at` and `Bytes.of` is the better fix.
+Libraries need releases that carry their own marks, and iyi-web, iyi-pg, iyi-db
+and jwt have them.
+
+## Upgrade
+
+The installer fetches the latest release:
+
+<Quote id="install" as="shell" caption="sh" copy />
+
+<Quote id="install_windows" as="shell" caption="PowerShell" copy />

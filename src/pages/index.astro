@@ -12,9 +12,16 @@ import { tourSamples, runnable, playgroundHref } from "../playground/samples";
 import { latestRelease, releaseAssets, windowsAsset } from "../lib/release";
 import platforms from "../generated/targets.json";
 import { SPELLED } from "../lib/lessons";
+import { announcementOf, postHref } from "../lib/posts";
 import mascot from "../assets/mascot.png";
 
 const release = latestRelease();
+
+/* The post that announces the current release, when there is one, linked
+ * under the install button: the release a reader is about to install, and
+ * what it changed. No post, no line, rather than a link to the blog's index
+ * standing in for an announcement nobody wrote. */
+const announcement = await announcementOf(release);
 
 /* The tour's first program, what it printed, and the route to it, all taken
  * from the tour's own table of contents. The page says "the first program of
@@ -94,6 +101,13 @@ const windows = windowsAsset(release);
         <a class="button" href={`${base}install/`}>Install {release.version}</a>
         <a class="button button--ghost" href={firstHref}>Try it in the browser</a>
       </div>
+      {
+        announcement && (
+          <a class="link news" href={postHref(base, announcement)}>
+            What {release.version} changed →
+          </a>
+        )
+      }
 
     </section>
     {/* The mascot, large, beside the one line. The largest thing painted above
@@ -348,6 +362,10 @@ const windows = windowsAsset(release);
       transform: translateY(-2px);
       border-radius: 50%;
       background: var(--brand);
+    }
+
+    .news {
+      align-self: flex-start;
     }
 
     .run-here {
