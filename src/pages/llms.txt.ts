@@ -79,6 +79,7 @@ export const GET: APIRoute = async ({ site }) => {
 
 iyi is Turkish for "good". Source: https://github.com/iyilang/iyi (Apache 2.0).
 Site: ${origin}. Latest release: ${release.version}, ${release.date}.
+Every lesson, tour program and prelude type in full: ${origin}/llms-full.txt
 
 ## What it is
 
