@@ -1,10 +1,10 @@
 {
   "recorded": {
-    "compiler": "iyi 0.20.1 (built on Crystal 1.22.0-dev [91d012b1e] (2026-11-04))",
-    "commit": "91d012b1ed978c7df5cc033624ec161a2daf01b6",
+    "compiler": "iyi 0.21.0 (built on Crystal 1.22.0-dev [08ce6c1cb] (2026-11-09))",
+    "commit": "08ce6c1cb2ba5768b15485dbbd6413fcb17df19a",
     "machine": "Linux 7.0.0-38-generic x86_64, QEMU Virtual CPU version 2.5+",
     "command": "npm run record:diagnostics",
-    "when": "2026-11-04T04:32:47.944Z"
+    "when": "2026-11-09T17:40:39.969Z"
   },
   "cases": [
     {
@@ -122,7 +122,7 @@
       "path": "records/break/share_reach.iyi",
       "command": "IYI_PATH=<iyi>/src iyi build --no-codegen --no-color --error-on-warnings records/break/share_reach.iyi",
       "exitCode": 1,
-      "stderr": "In records/break/share_reach.iyi:19:24\n\n 19 | Server.serve(listener) do |req|\n                             ^\nWarning: the block Server.serve keeps, which may run on other threads reaches `GREETING : Array(String)` (not Share) through `greeting` → `GREETING.join`: Array(String)'s field @size is assigned in `append`. If it is only read, make it a `List(String)` (std/list), which is Share. Keep the value behind a `Mutex` (std/mutex), or, when every thread may reach it safely - it is set once and then only read, or guarded some other way - say why on the constant: `@[SafeReach(\"...\")]` (SPEC.md III.4.4)\n\nA total of 1 warnings were found.\n"
+      "stderr": "In records/break/share_reach.iyi:19:24\n\n 19 | Server.serve(listener) do |req|\n                             ^\nWarning: the block Server.serve keeps, which may run on other threads reaches `GREETING : Array(String)` (not Share) through `greeting` → `GREETING.join`: Array(String)'s field @size is assigned in `append`. If it is only read, make it a `List(String)` (std/list), which is Share. Keep the value behind a `Mutex` (std/mutex), or, when every thread may reach it safely - every write is before the first parallel task starts, or behind one `Mutex#lock` on a constant or a class variable - say why on the constant: `@[SafeReach(\"...\")]`, which the compiler proves (SPEC.md III.4.4)\n\nA total of 1 warnings were found.\n"
     }
   ]
 }
