@@ -161,6 +161,28 @@ const dateModified = [release.date, dated[routeFile], source && dated[source]]
   .sort()
   .at(-1)!;
 
+/* The trail from the home page to this one, for the BreadcrumbList. Only the
+ * sections that are pages of their own appear in it: /reference/prelude/ is a
+ * path segment and not a page, and a breadcrumb that links to it links to a
+ * 404. The home page has no trail, and neither does a page that is not an
+ * address. */
+const sections: [string, string][] = [
+  ["Learn", "learn/"],
+  ["Reference", "reference/"],
+  ["Playground", "playground/"],
+  ["Project", "project/"],
+];
+const trail =
+  indexable && here !== href("")
+    ? [
+        { name: siteName, url: new URL(href(""), Astro.site).href },
+        ...sections
+          .filter(([, path]) => here.startsWith(href(path)) && here !== href(path))
+          .map(([name, path]) => ({ name, url: new URL(href(path), Astro.site).href })),
+        { name: title, url: canonical },
+      ]
+    : [];
+
 /* Structured data. The site, the project behind it and the language on every
  * page; the page itself typed by what it is. Search engines and answer engines
  * read this before they read prose.
@@ -234,8 +256,23 @@ const ld = {
       isPartOf: { "@id": `${Astro.site}#website` },
       about: { "@id": `${Astro.site}#iyi` },
       publisher: { "@id": organization },
+      ...(trail.length > 0 ? { breadcrumb: { "@id": `${canonical}#breadcrumb` } } : {}),
       inLanguage: "en",
     },
+    ...(trail.length > 0
+      ? [
+          {
+            "@type": "BreadcrumbList",
+            "@id": `${canonical}#breadcrumb`,
+            itemListElement: trail.map((crumb, index) => ({
+              "@type": "ListItem",
+              position: index + 1,
+              name: crumb.name,
+              item: crumb.url,
+            })),
+          },
+        ]
+      : []),
   ],
 };
 
