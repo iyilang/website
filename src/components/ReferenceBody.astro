@@ -7,7 +7,9 @@
  * Every listing is a `.source` figure, which is the site's listing face and
  * exempts it from scripts/prose.mjs: a signature is a token stream, not prose.
  */
+import Sample from "./Sample.astro";
 import type { Block, Item } from "../lib/reference";
+import type { SampleExample } from "../lib/reference-samples";
 
 interface Props {
   /** What the listings are, for their captions: `std/csv`, `String`. */
@@ -16,9 +18,22 @@ interface Props {
   command: string;
   intro: Block[];
   items: Item[];
+  /** Where the recorded samples use what this page documents, derived by
+   * `src/lib/reference-samples.ts`. Empty renders nothing: a page with no use
+   * in the samples says so by not having the section. */
+  examples: SampleExample[];
 }
 
-const { name, command, intro, items } = Astro.props;
+const { name, command, intro, items, examples } = Astro.props;
+
+/* What each link leads to, said in the link, because the three go to
+ * different kinds of place: a page that runs the program in the tab, a page
+ * with what it printed natively, and the file on GitHub. */
+const linkText = {
+  run: "Run the whole program in the playground",
+  recorded: "The whole program, with what it printed",
+  source: "The whole file in the iyi repository",
+} as const;
 
 /* The introduction's first paragraph is the page's lead, set above it by the
  * page, so it is not printed twice. */
@@ -42,6 +57,21 @@ const rest = intro.filter((_, index) => index !== firstParagraph);
           </figure>
         ),
       )}
+    </section>
+  )
+}
+
+{
+  examples.length > 0 && (
+    <section class="ref-examples" aria-labelledby="in-the-samples">
+      <h2 class="h3" id="in-the-samples">In the samples</h2>
+      <p>Where the sample programs this site compiles use <code>{name}</code>. Each excerpt is cut from the file itself, so it is code the compiler has read.</p>
+      {examples.map((example) => (
+        <div class="ref-example">
+          <Sample path={example.path} lines={`${example.start}-${example.end}`} must={example.must} />
+          <a class="link" href={example.href}>{linkText[example.link]}</a>
+        </div>
+      ))}
     </section>
   )
 }
@@ -101,7 +131,9 @@ const rest = intro.filter((_, index) => index !== firstParagraph);
 
 <style>
   .ref-intro,
-  .ref-item {
+  .ref-item,
+  .ref-examples,
+  .ref-example {
     display: flex;
     flex-direction: column;
     gap: 14px;
@@ -109,14 +141,30 @@ const rest = intro.filter((_, index) => index !== firstParagraph);
   }
 
   .ref-intro :global(p),
-  .ref-item :global(p) {
+  .ref-item :global(p),
+  .ref-examples p {
     margin: 0;
     max-width: 72ch;
     line-height: 1.7;
   }
 
   .ref-intro :global(figure),
-  .ref-item :global(figure) {
+  .ref-item :global(figure),
+  .ref-example :global(figure) {
+    margin: 0;
+  }
+
+  .ref-examples {
+    border-top: var(--hair) solid var(--hairline);
+    padding-top: 20px;
+    gap: 24px;
+  }
+
+  .ref-example {
+    gap: 8px;
+  }
+
+  .ref-examples h2 {
     margin: 0;
   }
 

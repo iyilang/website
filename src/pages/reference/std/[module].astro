@@ -8,6 +8,7 @@ import Page from "../../../layouts/Page.astro";
 import ReferenceBody from "../../../components/ReferenceBody.astro";
 import mascot from "../../../assets/mascot.png";
 import { moduleSearch, reference, referenceHref, type ModulePage } from "../../../lib/reference";
+import { moduleExamples } from "../../../lib/reference-samples";
 
 export function getStaticPaths() {
   return reference.modules.map((page) => ({ params: { module: page.slug }, props: { page } }));
@@ -38,6 +39,7 @@ const source = `https://github.com/iyilang/iyi/blob/${reference.release.tag}/${p
       command={`iyi doc ${page.path}`}
       intro={page.intro}
       items={page.items}
+      examples={moduleExamples(page)}
     />
   </div>
 

@@ -8,6 +8,7 @@ import Page from "../../../layouts/Page.astro";
 import ReferenceBody from "../../../components/ReferenceBody.astro";
 import mascot from "../../../assets/mascot.png";
 import { reference, referenceHref, typeSearch, type ReferencePage } from "../../../lib/reference";
+import { typeExamples } from "../../../lib/reference-samples";
 
 export function getStaticPaths() {
   return reference.prelude.map((page) => ({ params: { type: page.slug }, props: { page } }));
@@ -34,6 +35,7 @@ const lead = page.intro.find((block) => block.kind === "paragraph");
       command={`iyi doc ${page.name}`}
       intro={page.intro}
       items={page.items}
+      examples={typeExamples(page)}
     />
   </div>
 
