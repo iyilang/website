@@ -64,7 +64,7 @@ interface Props {
   title: string;
   summary?: string;
   /** Schema.org type of the page's main content; WebPage unless a page says. */
-  kind?: "WebPage" | "TechArticle" | "CollectionPage";
+  kind?: "WebPage" | "TechArticle" | "CollectionPage" | "Blog" | "BlogPosting";
   /**
    * Whether this page is a URL a crawler should keep.
    *
@@ -85,9 +85,14 @@ interface Props {
    * in deciding the page's `dateModified`.
    */
   source?: string;
+  /**
+   * The day a post was published, from its frontmatter, written into the
+   * structured data as `datePublished`.
+   */
+  published?: string;
 }
 
-const { title, summary, kind = "WebPage", indexable = true, source } = Astro.props;
+const { title, summary, kind = "WebPage", indexable = true, source, published } = Astro.props;
 const base = import.meta.env.BASE_URL;
 const href = (p: string) => `${base.replace(/\/$/, "")}/${p.replace(/^\//, "")}`;
 const here = Astro.url.pathname;
@@ -142,7 +147,9 @@ const ogImage = new URL(href("og.png"), Astro.site).href;
  * is found from the route's pattern, `/learn/[...slug]` being
  * src/pages/learn/[...slug].astro; a pattern that names no file is a broken
  * mapping here, not a page without a date, so it fails the build. A file with
- * no commit yet has no date of its own and the release's stands. */
+ * no commit yet has no date of its own and the release's stands. A post goes
+ * by the same rule: the listings and commands it sets follow the release like
+ * any page's. Its own day is `datePublished`, below. */
 const routeFile = (() => {
   const pattern = Astro.routePattern.replace(/\/$/, "");
   const candidates = [".astro", ".ts", "/index.astro"].map((ext) => `src/pages${pattern}${ext}`);
@@ -171,6 +178,7 @@ const sections: [string, string][] = [
   ["Reference", "reference/"],
   ["Playground", "playground/"],
   ["Project", "project/"],
+  ["Blog", "blog/"],
 ];
 const trail =
   indexable && here !== href("")
@@ -252,6 +260,10 @@ const ld = {
       ...(indexable ? { url: canonical } : {}),
       name: fullTitle,
       description: summary,
+      /* A post's headline is its own title, without the site's name the
+       * results-page title carries, and it was published on a day. */
+      ...(kind === "BlogPosting" ? { headline: title, author: { "@id": organization } } : {}),
+      ...(published ? { datePublished: published } : {}),
       dateModified,
       isPartOf: { "@id": `${Astro.site}#website` },
       about: { "@id": `${Astro.site}#iyi` },
@@ -282,6 +294,7 @@ const nav = [
   ["Reference", "reference/"],
   ["Agents", "agents/"],
   ["Playground", "playground/"],
+  ["Blog", "blog/"],
   ["Install", "install/"],
 ];
 
@@ -307,8 +320,9 @@ const current = (path: string) => here.startsWith(href(path));
     <link rel="apple-touch-icon" href={href("apple-touch-icon.png")} sizes="180x180" />
     <link rel="manifest" href={href("site.webmanifest")} />
     <link rel="sitemap" href={href("sitemap-index.xml")} />
+    <link rel="alternate" type="application/rss+xml" title="iyi blog" href={href("blog/rss.xml")} />
     <meta name="theme-color" content={token("paper-dark")} />
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={kind === "BlogPosting" ? "article" : "website"} />
     <meta property="og:site_name" content={siteName} />
     {indexable && <meta property="og:url" content={canonical} />}
     <meta property="og:title" content={fullTitle} />

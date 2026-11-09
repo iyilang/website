@@ -1,0 +1,204 @@
+---
+/**
+ * One post.
+ *
+ * The post's prose is its own file under src/content/blog. What this page adds
+ * is what every post carries and none should have to remember: the date it was
+ * published, the release it announces, and at the foot the release's notes in
+ * full and its downloads, both on the repository, where they are kept.
+ *
+ * A post is dated, and this page says so in its structured data: Page.astro
+ * writes `published` as the post's `datePublished`.
+ */
+import { render } from "astro:content";
+import Page from "../../layouts/Page.astro";
+import H2 from "../../components/H2.astro";
+import H3 from "../../components/H3.astro";
+import { posts, postHref, releaseOf, longDate, type Post } from "../../lib/posts";
+import { releaseUrl } from "../../lib/release";
+import install from "../../generated/install-targets.json";
+
+export async function getStaticPaths() {
+  const all = await posts();
+  return all.map((post, i) => ({
+    params: { slug: post.id },
+    props: { post, older: all[i + 1], newer: i > 0 ? all[i - 1] : undefined },
+  }));
+}
+
+interface Props {
+  post: Post;
+  older?: Post;
+  newer?: Post;
+}
+
+const { post, older, newer } = Astro.props;
+const { Content } = await render(post);
+const base = import.meta.env.BASE_URL;
+const indexHref = `${base.replace(/\/$/, "")}/blog/`;
+const release = releaseOf(post);
+const notes = release
+  ? `https://github.com/${install.repo}/blob/v${release.version}/CHANGELOG.md`
+  : undefined;
+---
+
+<Page
+  kind="BlogPosting"
+  title={post.data.title}
+  summary={post.data.description}
+  source={post.filePath}
+  published={post.data.date}
+>
+  <div class="wrap">
+    <article class="post">
+      <header class="post-head">
+        <p class="small meta">
+          <a href={indexHref}>Blog</a>
+          <span aria-hidden="true">·</span>
+          <time datetime={post.data.date}>{longDate(post.data.date)}</time>
+          {release && <span class="chip chip--red">{release.version}</span>}
+        </p>
+        <h1 class="h1">{post.data.title}</h1>
+        <p class="lead">{post.data.description}</p>
+      </header>
+
+      <div class="prose">
+        <Content components={{ h2: H2, h3: H3 }} />
+      </div>
+
+      {
+        release && (
+          <aside class="post-foot" aria-label={`iyi ${release.version}`}>
+            <p class="p">
+              Released {longDate(release.date)}. The notes in full, with the
+              machines their figures were measured on, are CHANGELOG.md at the
+              tag.
+            </p>
+            <div class="btns">
+              <a class="button" href={`${base.replace(/\/$/, "")}/install/`}>Install iyi</a>
+              <a class="button button--ghost" href={releaseUrl(release)}>
+                Downloads for {release.version}
+              </a>
+              <a class="button button--ghost" href={notes}>
+                The full notes
+              </a>
+            </div>
+          </aside>
+        )
+      }
+
+      {
+        (older || newer) && (
+          <nav class="pager" aria-label="More posts">
+            {newer ? <a class="button button--ghost" href={postHref(base, newer)}>← {newer.data.title}</a> : <span />}
+            {older && <a class="button button--ghost" href={postHref(base, older)}>{older.data.title} →</a>}
+          </nav>
+        )
+      }
+    </article>
+  </div>
+</Page>
+
+<style>
+  .post {
+    max-width: 780px;
+    padding-top: clamp(32px, 5vw, 56px);
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .post-head {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .meta {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-family: var(--font-mono);
+  }
+
+  .meta a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  /* The post's own prose: the rhythm and sizes a lesson's prose is set in, so
+   * the two kinds of long reading on the site read alike. */
+  .prose {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  .prose > :global(*) {
+    margin: 0;
+  }
+
+  .prose :global(p),
+  .prose :global(li) {
+    font-size: 16.5px;
+    line-height: 1.7;
+    color: var(--ink);
+    opacity: 0.92;
+  }
+
+  .prose :global(p code),
+  .prose :global(li code) {
+    font-size: 0.88em;
+  }
+
+  .prose :global(h2),
+  .prose :global(h3) {
+    margin-top: 20px;
+    font-size: 24px;
+    font-weight: 650;
+    font-stretch: normal;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+  }
+
+  .prose :global(h3) {
+    font-size: 20px;
+  }
+
+  .prose :global(ul),
+  .prose :global(ol) {
+    padding-inline-start: 1.3em;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .prose :global(.source pre) {
+    font-size: 12.5px;
+  }
+
+  .post-foot {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-top: 24px;
+    border-top: var(--hair) solid var(--hairline);
+  }
+
+  .pager {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .pager .button {
+    height: auto;
+    min-height: 44px;
+    padding-block: 10px;
+    line-height: 1.3;
+  }
+</style>

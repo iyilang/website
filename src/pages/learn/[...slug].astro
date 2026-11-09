@@ -23,7 +23,7 @@
  *
  * Two things the markdown pipeline leaves undone are done here. It slugs every
  * heading and emits nothing that links to a slug, so the `##` and `###` of a
- * lesson are mapped onto `_Heading.astro`, which hangs a link on the id the
+ * lesson are mapped onto `components/Heading.astro`, which hangs a link on the id the
  * pipeline already put there. And the same slugs are listed in the rail as the
  * step's own contents, read off the rendered entry, so the list and the page
  * cannot drift. No reading time anywhere: doc/ART-DIRECTION.md forbids a time
@@ -37,8 +37,8 @@
 import { render } from "astro:content";
 import Page from "../../layouts/Page.astro";
 import BreakRule from "../../components/BreakRule.astro";
-import H2 from "./_H2.astro";
-import H3 from "./_H3.astro";
+import H2 from "../../components/H2.astro";
+import H3 from "../../components/H3.astro";
 import {
   sequence,
   rulesOf,

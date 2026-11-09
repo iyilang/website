@@ -145,6 +145,7 @@ an iyi module; iyi consumes Crystal, not the other way around.
 - [Download](${origin}/download/): every artifact, the \`uname\` pair it is for, and how to verify it.
 - [Targets](${origin}/targets/): what CI type-checks, audits and runs, per triple.
 - [Project](${origin}/project/): contributing, security, the code of conduct, the notices.
+- [Blog](${origin}/blog/): a post for each release, what it changes and what a user has to change; RSS at ${origin}/blog/rss.xml.
 
 The design record and the release notes live in the repository: SPEC.md and
 CHANGELOG.md are read there, which is where they are kept current.

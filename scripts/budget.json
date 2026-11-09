@@ -34,6 +34,8 @@
     { "match": "/install/", "ceiling": 229376 },
     { "match": "/learn/", "ceiling": 245760 },
     { "match": "/learn/*/", "ceiling": 245760 },
+    { "match": "/blog/", "ceiling": 212992 },
+    { "match": "/blog/*/", "ceiling": 229376 },
     { "match": "/playground/", "ceiling": 229376 },
     { "match": "/playground/iyi/*/", "ceiling": 262144 },
     { "match": "/playground/evidence/", "ceiling": 327680 },

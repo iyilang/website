@@ -1,18 +1,18 @@
 ---
 /**
- * A heading inside a lesson's prose, with a link to itself beside it.
+ * A heading inside a lesson's or a post's prose, with a link to itself beside
+ * it.
  *
  * The id is not invented here. Astro's markdown pipeline slugs every heading
- * already, which is what the in-page contents list in `[...slug].astro` links
- * to, and MDX hands the rendered element's attributes to whatever component is
- * mapped over it. So this reads the id it was given and refuses to link when
- * there is none, rather than deriving a second slug that could disagree with
- * the first and send a reader to an anchor that is not on the page.
+ * already, which is what a lesson's in-page contents list links to, and MDX
+ * hands the rendered element's attributes to whatever component is mapped over
+ * it. So this reads the id it was given and refuses to link when there is
+ * none, rather than deriving a second slug that could disagree with the first
+ * and send a reader to an anchor that is not on the page.
  *
- * Underscore prefixed so Astro does not route it: a component that lives beside
- * the page it serves, which is the only page that can use it, because MDX
- * component mappings are handed to `<Content />` by the page doing the
- * rendering.
+ * It is mapped by the pages that render `<Content />`, src/pages/learn/[...slug].astro
+ * and src/pages/blog/[slug].astro, because MDX component mappings are handed
+ * to `<Content />` by the page doing the rendering.
  *
  * The two wrappers beside this file exist because an MDX mapping is keyed on
  * the element name and carries no depth with it, so the level has to be written
