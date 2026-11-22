@@ -107,8 +107,9 @@ const readme = flat(readmeText);
 const install = flat(read(INSTALL));
 
 /* The `case` block on `$os-$arch`, and nothing else in the script: a `case` on
- * something else must not be mistaken for this one. */
-const block = /case "\$os-\$arch" in\n([\s\S]*?)\nesac/.exec(script);
+ * something else must not be mistaken for this one. Indented since 0.22.0,
+ * which moved the whole script into a `main` called on its last line. */
+const block = /case "\$os-\$arch" in\n([\s\S]*?)\n[ \t]*esac/.exec(script);
 if (!block) {
   throw new Error(
     `install-targets: ${SOURCE} no longer has a \`case "$os-$arch"\` block, ` +
@@ -288,10 +289,11 @@ const targets = published.map((target) => ({
 
 /* What the installer asks the release for, and where. Kept as the shell wrote
  * them, `$version` and `$target` included, so the generated record holds the
- * very strings install.sh holds and `src/lib/release.ts` only fills them in. */
-const slug = /^repo="([^"]+)"/m.exec(script);
-const asset = /^asset="([^"]+)"/m.exec(script);
-const base = /^base="\$\{IYI_RELEASE_URL:-([^}"]+)\}"/m.exec(script);
+ * very strings install.sh holds and `src/lib/release.ts` only fills them in.
+ * Indented, as the `case` block is, inside `main`. */
+const slug = /^[ \t]*repo="([^"]+)"/m.exec(script);
+const asset = /^[ \t]*asset="([^"]+)"/m.exec(script);
+const base = /^[ \t]*base="\$\{IYI_RELEASE_URL:-([^}"]+)\}"/m.exec(script);
 if (!slug || !asset || !base) {
   throw new Error(
     `install-targets: ${SOURCE} no longer states its \`repo=\`, \`asset=\` ` +

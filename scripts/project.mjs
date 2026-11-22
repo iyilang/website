@@ -68,13 +68,13 @@ const commit = execFileSync("git", ["-C", repo, "rev-parse", "HEAD"], {
 
 // `repo="iyilang/iyi"` in install.sh: the slug the installer downloads from.
 // Read rather than typed, so a fork that renames does not leave the site
-// linking at the old owner's tree.
+// linking at the old owner's tree. Indented since 0.22.0, inside `main`.
 const slug = (() => {
   const line = readFileSync(resolve(repo, "install.sh"), "utf8")
     .split("\n")
-    .find((text) => /^repo="/.test(text));
-  if (!line) die(`install.sh no longer opens with a repo="owner/name" line, which is where this script learns where to link`);
-  return /^repo="([^"]+)"/.exec(line)[1];
+    .find((text) => /^[ \t]*repo="/.test(text));
+  if (!line) die(`install.sh no longer states a repo="owner/name" line, which is where this script learns where to link`);
+  return /^[ \t]*repo="([^"]+)"/.exec(line)[1];
 })();
 
 const blob = `https://github.com/${slug}/blob/${commit}`;
