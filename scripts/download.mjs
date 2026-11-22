@@ -63,12 +63,19 @@ const powershell = text(WINDOWS).replace(/\n$/, "").split("\n");
  * A span of a file, found by the line that opens it and the line that closes
  * it, both matched as patterns. Anchors, not line numbers: a line number is a
  * guess about a file nobody edits with this site in mind.
+ *
+ * `level` closes the span only at a closer indented as its opener is: a shell
+ * block's `fi` or `esac`, not the one of a block nested inside it. install.sh
+ * has been one indented `main` since 0.22.0, so a closer at column 0 is no
+ * longer what tells the two apart.
  */
-const span = (lines, file, name, open, close) => {
+const span = (lines, file, name, open, close, { level = false } = {}) => {
   const from = lines.findIndex((line) => open.test(line));
   if (from < 0) die(`${file} has no line matching ${open} any more, so the "${name}" passage cannot be quoted`);
+  const indentOf = (line) => line.match(/^\s*/)[0];
+  const closes = (line) => close.test(line) && (!level || indentOf(line) === indentOf(lines[from]));
   let to = from;
-  while (to < lines.length && !close.test(lines[to])) to++;
+  while (to < lines.length && !closes(lines[to])) to++;
   if (to >= lines.length) die(`${file}:${from + 1} opens the "${name}" passage and nothing after it matches ${close}`);
   // A comment block ends at the first bare `#`, which is a separator rather
   // than a line anybody wrote; quoting it would put an empty comment at the
@@ -96,11 +103,11 @@ const knobs = span(installer, INSTALLER, "knobs", /^# IYI_PREFIX/, /^#\s*$/);
 
 // The two `uname` pairs, and the sentence printed at anything else. The
 // refusal is by name, and naming what is refused is the point.
-const refusal = span(installer, INSTALLER, "refusal", /^case "\$os-\$arch" in$/, /^esac$/);
+const refusal = span(installer, INSTALLER, "refusal", /^\s*case "\$os-\$arch" in$/, /^\s*esac$/, { level: true });
 
 // Download, verify, refuse. Opens at the comment that explains why the
 // unverified case is said out loud rather than passed over.
-const verify = span(installer, INSTALLER, "verify", /^# The checksum line for this tarball/, /^fi$/);
+const verify = span(installer, INSTALLER, "verify", /^\s*# The checksum line for this tarball/, /^\s*fi$/, { level: true });
 
 // The release job that writes the file the installer looks for. Anchored on
 // the `cat` as well, because an earlier job writes SHA256SUMS too: it is the
@@ -246,7 +253,7 @@ if (checkers.length === 0) die(`${INSTALLER} no longer computes a digest with a 
 
 // The asset name pattern, so the page's per-artifact verification command
 // names the file the installer would have downloaded.
-const asset = /^asset="([^"]+)"/m.exec(installer.join("\n"));
+const asset = /^[ \t]*asset="([^"]+)"/m.exec(installer.join("\n"));
 if (!asset) die(`${INSTALLER} no longer names its asset, which is the file a reader verifies`);
 
 // ---------------------------------------------------------------------------

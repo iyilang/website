@@ -129,8 +129,9 @@ const machineOf = (target: string) =>
   <section class="wrap">
     <h2>What the installers check, in their own words</h2>
     <p class="sub">
-      The verification passage from install.sh. The final branch halts with an
-      explicit error if a release published no checksum file.
+      The verification passage from install.sh. Its last branch halts with an
+      explicit error when the checksum file of a release that publishes one
+      cannot be fetched, and unpacks nothing.
     </p>
     <Lifted
       text={download.passages.verify.text}

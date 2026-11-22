@@ -1,0 +1,128 @@
+---
+title: "iyi 0.22.0: closing what a peer could reach"
+description: "iyi 0.22.0 keys a string's hash per process, holds std/http to its caller's limits, answers a refused file as a value and runs tests at once."
+date: "2026-11-22"
+release: "0.22.0"
+---
+
+import ReleaseNote from "../../components/ReleaseNote.astro";
+import Quote from "../../components/Quote.astro";
+
+iyi 0.22.0 is out. 0.21.0 made tasks run in parallel; this release is about
+what a program faces once it is serving: a peer that sends keys built to
+collide, a request head past the server's limit, a disk that fills, a
+dependency that changes under a build. It also makes `iyi test` a runner a
+project can lean on. Here is the release in its own words:
+
+<ReleaseNote release="0.22.0" find="A string's hash is keyed afresh in every process, std/http holds a request" />
+
+## A hash a client cannot aim
+
+`String#hash` was FNV-1a from a fixed start, and keys that all share one hash
+are cheap to build offline. Anywhere a program filed client-chosen strings in a
+table, a request body's JSON or std/http's headers among them, such keys made a
+`Hash` or `JSON.parse` quadratic. It is SipHash-1-3 now, the hash Rust's and
+Python's tables use, keyed once a process from the system's entropy before the
+program's first line runs.
+
+A table's order is still the order things went in, so nothing a program prints
+moves. What does move is the hash itself: it differs from one run to the next,
+so a program must not keep or print one as if it stayed.
+
+## Limits the server holds
+
+`Server.serve` and `Server.handle` take `max_head` and `max_body`. The defaults
+are `Server::MAX_HEAD` and `Server::MAX_BODY`, as before, and they are now held
+to while the request is read: a head past `max_head` is a 431 and a body past
+`max_body` is a 413, over HTTP/1.1 and HTTP/2, on the calling thread and on the
+pool, streamed or not. A server with smaller limits of its own, as iyi-web is,
+used to be able to check them only after std/http had read up to its own
+ceiling. A head past the limit whose end arrived in the same read as the bytes
+that passed it used to be served; it is refused now wherever its end lies.
+
+## A refused file is a value
+
+iyi has no `rescue`, and `File.open`, a `FileIO`'s write and the flush in
+`close` panicked when the system said no. A server could not answer 507 or 500
+and carry on. `std/file` now has `File.open?`, `File.read?`, `File.write?`, and
+a `FileIO`'s `write?`, `flush?` and `close?`, in std's `?` convention. Each
+answers an `IOError` carrying the operation, the path and the platform's error
+number, with `reason` in words and `not_found?`, `denied?` and `full?` to
+branch on. The panicking forms are unchanged.
+
+## Closing what a peer could reach
+
+Compile-time macros in `.iyi` files no longer run shell commands: `system` and
+backticks are refused at their line, `read_file` stays inside its own package
+and the standard library, and only the root package reads the build
+environment with `env`. A `run` helper has to live in the package that defines
+the macro, though it still runs without a sandbox.
+
+The standard library's network and crypto modules got the same scrutiny.
+std/tls, std/x509, std/ocsp, std/cookie, std/password, std/otp, std/rsa and
+std/big close what a peer could reach. A signature that fails its own check is
+now an error the caller answers beside the signature, where it used to end the
+process.
+
+Packages are pinned harder too. An `iyi.sum` hash is SHA-256 and says where
+each file ends, and `iyi.sum` now records every manifest the version selection
+reads, outbid versions included, so a requirement cannot slip in through a
+manifest nobody checked. `install.sh` refuses a tarball when the release's
+`SHA256SUMS` cannot be fetched and fetches over HTTPS only, and a release now
+attests where it was built, which `gh attestation verify` reads.
+
+## Tests at once
+
+`iyi test` runs half as many tests at once as the machine has cores, `-p N`
+says how many, and the report stays in file order. `test "name" do ... end` is
+a named case: `--json` reports each one's verdict and its panic's message,
+`--run TEXT` runs the cases whose name holds the text (and fails a run in which
+none does, rather than passing having tested nothing), and `skip: "why"` leaves
+one out and says why. `--release` and `-D FLAG` build every test that way, and
+`-v` shows what a passing test printed.
+
+In a directory, `iyi test` no longer walks into `lib`, a dot directory or
+another module's directory, so it runs your tests and not your dependencies'.
+A test killed at its deadline takes the processes it started with it, and its
+output comes back in the order it wrote it.
+
+## Underneath
+
+The runtime that 0.21.0 made parallel holds up under load. A pool short of
+workers fills instead of letting its tasks take turns on too few, a finished
+thread leaves nothing behind on the scheduler's registry, and threads that
+panic at once print whole lines. Each size class keeps warm only what it took
+in the last epoch, and an idle pool hands its warm pages back, which is where
+the steady memory figures above come from.
+
+The build is steadier as well. A build that runs a command from a macro is no
+longer taken for up to date by the next, a build no longer links objects
+another build's cache rotation has just deleted, and the compiler's cache stays
+bounded. `iyi lsp` no longer recompiles a large module for every question. A
+regex literal that a macro writes compiles (#215), and so does a `lib` global
+read by a generic body that travels across a module boundary (#204).
+`iyi doc --json` prints a package's exported API as data.
+
+heap22, a heap per pool unit that each unit collects on its own thread, ships
+as an experiment behind `-Dheap_partitions`. A build without the flag is
+today's, apart from two std/tls accessors that now answer copies, and whether
+heap22 stays is decided by its measurements.
+
+## What you have to change
+
+<ReleaseNote release="0.22.0" find="What a user must change." />
+
+In practice: move any macro that shelled out to a step outside the build, run
+`iyi mod tidy` and commit the `iyi.sum` it writes, and upgrade together if your
+team shares one, since 0.21.0 does not read the new `h2:` lines. Where a program
+signs with std/rsa, std/tls, std/x509 or std/acme, handle the error the call
+now answers. Anything that saved or compared a string's hash across runs has to
+stop.
+
+## Upgrade
+
+The installer fetches the latest release:
+
+<Quote id="install" as="shell" caption="sh" copy />
+
+<Quote id="install_windows" as="shell" caption="PowerShell" copy />
