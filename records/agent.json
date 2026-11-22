@@ -1,10 +1,10 @@
 {
   "recorded": {
-    "compiler": "iyi 0.21.0 (built on Crystal 1.22.0-dev [08ce6c1cb] (2026-11-09))",
-    "commit": "08ce6c1cb2ba5768b15485dbbd6413fcb17df19a",
+    "compiler": "iyi 0.22.0 (built on Crystal 1.22.0-dev [259a875b0] (2026-11-22))",
+    "commit": "259a875b07087d98b35aea38e762c17d39cc53c1",
     "machine": "Linux 7.0.0-38-generic x86_64, QEMU Virtual CPU version 2.5+",
     "command": "npm run record:agent",
-    "when": "2026-11-09T17:40:45.851Z"
+    "when": "2026-11-22T14:39:24.326Z"
   },
   "project": [
     {
@@ -167,7 +167,7 @@
       },
       "serverInfo": {
         "name": "iyi",
-        "version": "0.21.0"
+        "version": "0.22.0"
       }
     },
     "tools": [
