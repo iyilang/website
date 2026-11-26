@@ -69,6 +69,19 @@ jobs:
           cache: npm
           cache-dependency-path: site/package-lock.json
 
+      # The site is about the release CHANGELOG.md states, not about master:
+      # the generators read README.md and the workflow out of this checkout,
+      # and a laptop builds against a worktree at the tag (README.md, Records).
+      # Left on master, a README edit after a release broke every deploy of
+      # this site until the next release. scripts/release-ref.mjs is the one
+      # answer to which tag that is, and it fails by name when the tag is not
+      # in the clone.
+      - name: Pin iyi to the release the site publishes
+        working-directory: site
+        run: |
+          tag=$(node --input-type=module -e "import { releaseRef } from './scripts/release-ref.mjs'; console.log(releaseRef('../iyi').tag)")
+          git -C ../iyi checkout --detach "$tag"
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
